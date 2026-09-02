@@ -1,9 +1,11 @@
 using LMS.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using LMS.API.Models;
 
 namespace LMS.API.Data
 {
-    public class LmsContext(DbContextOptions<LmsContext> options) : DbContext(options)
+    public class LmsContext(DbContextOptions<LmsContext> options) : IdentityDbContext<ApplicationUser, ApplicationRole, string>(options)
     {
         public DbSet<User> User { get; set; } = default!;
         public DbSet<Course> Course { get; set; } = default!;
