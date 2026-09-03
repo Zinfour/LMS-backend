@@ -21,6 +21,9 @@ namespace LMS.API.Data
         {
             base.OnModelCreating(builder);
 
+            // Expose the UserRole table as the navigation properties Roles and Users on
+            // ApplicationUser and ApplicationRole. This allows us to for example fetch
+            // all users filtered by their roles without an explicit join.
             builder.Entity<ApplicationUser>()
                 .HasMany(u => u.Roles)
                 .WithMany(r => r.Users)
