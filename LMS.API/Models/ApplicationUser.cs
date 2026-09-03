@@ -1,18 +1,17 @@
+﻿using Microsoft.AspNetCore.Identity;
+
 namespace LMS.API.Models
 {
-    public class User
+    public class ApplicationUser : IdentityUser
     {
-        public int Id { get; set; }
+        public string FirstName { get; set; } = null!;
+        public string LastName { get; set; } = null!;
+        public string FullName => $"{FirstName} {LastName}";
+
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-
-        public string Email { get; set; } = null!;
-        public string Username { get; set; } = null!;
-        public string PasswordHash { get; set; } = null!;
-        public Role Role { get; set; }
         public string? ImageUrl { get; set; }
         public List<Submission> Submissions { get; set; } = null!;
-        
         public int CourseId { get; set; }
         public Course Course { get; set; } = null!;
     }

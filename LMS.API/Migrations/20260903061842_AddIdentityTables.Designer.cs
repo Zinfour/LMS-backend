@@ -3,6 +3,7 @@ using System;
 using LMS.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMS.API.Migrations
 {
     [DbContext(typeof(LmsContext))]
-    partial class LmsContextModelSnapshot : ModelSnapshot
+    [Migration("20260903061842_AddIdentityTables")]
+    partial class AddIdentityTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -136,12 +139,6 @@ namespace LMS.API.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CourseId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
@@ -151,9 +148,6 @@ namespace LMS.API.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ImageUrl")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
@@ -189,16 +183,11 @@ namespace LMS.API.Migrations
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -386,9 +375,6 @@ namespace LMS.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("AssignmentId")
                         .HasColumnType("INTEGER");
 
@@ -408,13 +394,56 @@ namespace LMS.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
+                    b.Property<int?>("UserId")
+                        .HasColumnType("INTEGER");
 
-                    b.HasIndex("ApplicationUserId");
+                    b.HasKey("Id");
 
                     b.HasIndex("AssignmentId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Submission");
+                });
+
+            modelBuilder.Entity("LMS.API.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -537,17 +566,6 @@ namespace LMS.API.Migrations
                         .HasForeignKey("ActivityId");
                 });
 
-            modelBuilder.Entity("LMS.API.Models.ApplicationUser", b =>
-                {
-                    b.HasOne("LMS.API.Models.Course", "Course")
-                        .WithMany("Users")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-                });
-
             modelBuilder.Entity("LMS.API.Models.Assignment", b =>
                 {
                     b.HasOne("LMS.API.Models.Activity", null)
@@ -573,15 +591,26 @@ namespace LMS.API.Migrations
 
             modelBuilder.Entity("LMS.API.Models.Submission", b =>
                 {
-                    b.HasOne("LMS.API.Models.ApplicationUser", null)
-                        .WithMany("Submissions")
-                        .HasForeignKey("ApplicationUserId");
-
                     b.HasOne("LMS.API.Models.Assignment", null)
                         .WithMany("Submissions")
                         .HasForeignKey("AssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("LMS.API.Models.User", null)
+                        .WithMany("Submissions")
+                        .HasForeignKey("UserId");
+                });
+
+            modelBuilder.Entity("LMS.API.Models.User", b =>
+                {
+                    b.HasOne("LMS.API.Models.Course", "Course")
+                        .WithMany("Users")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -642,11 +671,6 @@ namespace LMS.API.Migrations
                     b.Navigation("Resources");
                 });
 
-            modelBuilder.Entity("LMS.API.Models.ApplicationUser", b =>
-                {
-                    b.Navigation("Submissions");
-                });
-
             modelBuilder.Entity("LMS.API.Models.Assignment", b =>
                 {
                     b.Navigation("Submissions");
@@ -666,6 +690,11 @@ namespace LMS.API.Migrations
                     b.Navigation("Activities");
 
                     b.Navigation("Resources");
+                });
+
+            modelBuilder.Entity("LMS.API.Models.User", b =>
+                {
+                    b.Navigation("Submissions");
                 });
 #pragma warning restore 612, 618
         }

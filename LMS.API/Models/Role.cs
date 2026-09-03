@@ -1,8 +1,14 @@
 namespace LMS.API.Models
 {
-    public enum Role
+    public static class Role
     {
-        Teacher,
-        Student,
+        public const string Teacher = "Teacher";
+        public const string Student = "Student";
     }
+
+    //public enum Role
+    //{
+    //    Teacher,
+    //    Student,
+    //}
 }
