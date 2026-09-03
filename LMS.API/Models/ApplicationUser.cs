@@ -14,5 +14,7 @@ namespace LMS.API.Models
         public List<Submission> Submissions { get; set; } = null!;
         public int CourseId { get; set; }
         public Course Course { get; set; } = null!;
+
+        public ICollection<ApplicationRole> Roles { get; set; } = [];
     }
 }
