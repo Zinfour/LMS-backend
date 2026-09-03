@@ -1,7 +1,6 @@
 using LMS.API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using LMS.API.Models;
 
 namespace LMS.API.Data
 {
