@@ -11,7 +11,7 @@ namespace LMS.API.Models
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
         public string? ImageURL { get; set; }
-        public List<Activity> Activities { get; set; } = null!;
-        public List<ModuleResource> Resources { get; set; } = null!;
+        public List<Activity> Activities { get; set; } = [];
+        public List<ModuleResource> Resources { get; set; } = [];
     }
 }

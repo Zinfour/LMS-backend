@@ -7,7 +7,6 @@ namespace LMS.API.Data
 {
     public class LmsContext(DbContextOptions<LmsContext> options) : IdentityDbContext<ApplicationUser, ApplicationRole, string>(options)
     {
-        public DbSet<User> User { get; set; } = default!;
         public DbSet<Course> Course { get; set; } = default!;
         public DbSet<Module> Module { get; set; } = default!;
         public DbSet<Activity> Activity { get; set; } = default!;

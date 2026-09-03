@@ -11,7 +11,7 @@ namespace LMS.API.Models
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string Description { get; set; } = null!;
-        public List<ActivityResource> Resources { get; set; } = null!;
+        public List<ActivityResource> Resources { get; set; } = [];
         public string? ImageURL { get; set; }
         public Assignment? Assignment { get; set; }
     }
