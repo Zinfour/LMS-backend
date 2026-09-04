@@ -14,8 +14,8 @@ namespace LMS.API.Data
         public DbSet<Submission> Submission { get; set; } = default!;
 
         public DbSet<ActivityResource> ActivityResource { get; set; } = default!;
-        public DbSet<ActivityResource> CourseResource { get; set; } = default!;
-        public DbSet<ActivityResource> ModuleResource { get; set; } = default!;
+        public DbSet<CourseResource> CourseResource { get; set; } = default!;
+        public DbSet<ModuleResource> ModuleResource { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
