@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using LMS.API.Data;
 using LMS.API.DTOs;
 using LMS.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +17,7 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
     private readonly UserManager<ApplicationUser> _userManager = userManager;
 
     [HttpGet]
+    [Authorize(Roles = Role.Teacher)]
     public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(string? role, int? course)
     {
         if (role != null && role != Role.Teacher && role != Role.Student)
@@ -49,8 +52,16 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<UserDto>> GetUser(string id)
     {
+        var callerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isTeacher = User.IsInRole(Role.Teacher);
+
+        if (!isTeacher && callerId != id)
+        {
+            return Forbid();
+        }
         var user = await _context.Users
             .Where(u => u.Id == id)
             .Select(u => new UserDto
@@ -76,6 +87,7 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
     }
 
     [HttpPost]
+    [Authorize(Roles = Role.Teacher)]
     public async Task<ActionResult> CreateUser(CreateUserDto dto)
     {
         if (dto.Role != Role.Teacher && dto.Role != Role.Student)
@@ -138,6 +150,7 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = Role.Teacher)]
     public async Task<ActionResult> UpdateUser(string id, UpdateUserDto dto)
     {
         if (dto.Role != Role.Teacher && dto.Role != Role.Student)
@@ -206,6 +219,7 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = Role.Teacher)]
     public async Task<ActionResult> DeleteUser(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
