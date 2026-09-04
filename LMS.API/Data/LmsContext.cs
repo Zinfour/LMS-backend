@@ -30,6 +30,44 @@ namespace LMS.API.Data
                 .UsingEntity<IdentityUserRole<string>>(
                     j => j.HasOne<ApplicationRole>().WithMany().HasForeignKey(ur => ur.RoleId),
                     j => j.HasOne<ApplicationUser>().WithMany().HasForeignKey(ur => ur.UserId));
+
+            builder.Entity<ActivityResource>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ActivityResource>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            builder.Entity<CourseResource>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CourseResource>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            builder.Entity<ModuleResource>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ModuleResource>()
+                .HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

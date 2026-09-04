@@ -14,5 +14,7 @@ namespace LMS.API.Models
         public List<ActivityResource> Resources { get; set; } = [];
         public string? ImageURL { get; set; }
         public Assignment? Assignment { get; set; }
+        public int ModuleId { get; set; }
+        public Module Module { get; set; } = null!;
     }
 }

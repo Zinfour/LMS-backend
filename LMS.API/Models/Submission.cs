@@ -8,7 +8,11 @@ namespace LMS.API.Models
 
         public string Text { get; set; } = null!;
         public DateTime SubmittedAt { get; set; }
-        public int StudentId { get; set; }
+
+        public string StudentId { get; set; } = null!;
+        public ApplicationUser Student { get; set; } = null!;
+
         public int AssignmentId { get; set; }
+        public Assignment Assignment { get; set; } = null!;
     }
 }
