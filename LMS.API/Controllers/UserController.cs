@@ -103,6 +103,9 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
             CourseId = dto.CourseId,
         };
 
+        // Begin transaction. If we return without committing, all changes will be reverted.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
         var createResult = await _userManager.CreateAsync(user, dto.Password);
         if (!createResult.Succeeded)
         {
@@ -112,9 +115,10 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
         var roleResult = await _userManager.AddToRoleAsync(user, dto.Role);
         if (!roleResult.Succeeded)
         {
-            await _userManager.DeleteAsync(user); // don't leave a role-less account behind
             return BadRequest(roleResult.Errors.Select(e => e.Description));
         }
+
+        await transaction.CommitAsync();
 
         return CreatedAtAction(
             nameof(GetUser),
@@ -152,6 +156,9 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
         {
             return BadRequest("Invalid CourseId.");
         }
+
+        // Begin transaction. If we return without committing, all changes will be reverted.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
 
         user.UpdatedAt = DateTime.UtcNow;
         user.Email = dto.Email;
@@ -194,6 +201,7 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
             }
         }
 
+        await transaction.CommitAsync();
         return NoContent();
     }
 
