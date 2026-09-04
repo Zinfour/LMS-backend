@@ -20,6 +20,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
   </ItemGroup>
 
 </Project>

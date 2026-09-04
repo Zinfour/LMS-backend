@@ -13,5 +13,8 @@ namespace LMS.API.Models
         public string? ImageURL { get; set; }
         public List<Activity> Activities { get; set; } = [];
         public List<ModuleResource> Resources { get; set; } = [];
+        
+        public int CourseId { get; set; }
+        public Course Course { get; set; } = null!;
     }
 }

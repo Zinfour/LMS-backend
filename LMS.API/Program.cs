@@ -4,6 +4,7 @@ using LMS.API.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,20 +47,30 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => // Enum values will be converted into strings instead of numbers.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    // can be found at /openapi/v1.json
     app.MapOpenApi();
+    app.UseSwagger();
+    // can be found at /swagger
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

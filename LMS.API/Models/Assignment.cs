@@ -9,7 +9,10 @@ namespace LMS.API.Models
         public string Title { get; set; } = null!;
         public string Description { get; set; } = null!;
         public DateTime Deadline { get; set; }
+        
         public int ActivityId { get; set; }
+        public Activity Activity { get; set; } = null!;
+        
         public List<Submission> Submissions { get; set; } = null!;
     }
 }

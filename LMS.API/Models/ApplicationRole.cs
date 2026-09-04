@@ -6,5 +6,7 @@ namespace LMS.API.Models
     {
         public ApplicationRole() : base() { }
         public ApplicationRole(string roleName) : base(roleName) { }
+
+        public ICollection<ApplicationUser> Users { get; set; } = [];
     }
 }

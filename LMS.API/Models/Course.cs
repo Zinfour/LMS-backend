@@ -12,7 +12,7 @@ namespace LMS.API.Models
         public string Description { get; set; } = null!;
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
-        public List<Activity> Modules { get; set; } = [];
+        public List<Module> Modules { get; set; } = [];
         public string? ImageURL { get; set; }
         public List<CourseResource> Resources { get; set; } = [];
         public List<ApplicationUser> Users { get; set; } = [];
