@@ -9,3 +9,40 @@
 // PUT
 // DELETE
 // /api/courses/{id}/modules
+
+
+using LMS.API.Data;
+using LMS.API.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SQLitePCL;
+
+namespace LMS.API.Controllers;
+
+[ApiController]
+[Route("/api/courses/{courseId}/modules")]
+public class ModuleController(LmsContext lmsContext) : ControllerBase
+{
+    private readonly LmsContext _context = lmsContext;
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<ModuleDto>>> getModules(int courseId)
+    {
+        var courseExists = await _context.Course.AnyAsync(c => c.Id == courseId);
+        if (!courseExists)
+        {
+            return BadRequest("Invalid CourseId.");
+        }
+
+        return await _context.Module
+            .Where(m => m.CourseId == courseId)
+            .Select(m => new ModuleDto
+            {
+                Name = m.Name,
+                Description = m.Description,
+                StartDate = m.StartDate,
+                EndDate = m.EndDate,
+                ImageURL = m.ImageURL
+            }).ToListAsync();
+    }
+}
