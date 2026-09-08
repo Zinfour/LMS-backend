@@ -40,11 +40,13 @@ public class ModuleController(LmsContext lmsContext) : ControllerBase
             .Where(m => m.CourseId == courseId)
             .Select(m => new ModuleDto
             {
+                Id = m.Id,
                 Name = m.Name,
                 Description = m.Description,
                 StartDate = m.StartDate,
                 EndDate = m.EndDate,
-                ImageURL = m.ImageURL
+                ImageURL = m.ImageURL,
+                CourseId = m.CourseId
             }).ToListAsync();
     }
 
