@@ -178,7 +178,7 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
 
     [HttpDelete("{id}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> DeleteUser(int id)
+    public async Task<ActionResult> DeleteCourse(int id)
     {
         var course = await _context.Course.FindAsync(id);
 
