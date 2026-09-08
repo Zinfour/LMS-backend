@@ -13,6 +13,8 @@
 
 using LMS.API.Data;
 using LMS.API.DTOs;
+using LMS.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SQLitePCL;
@@ -44,5 +46,32 @@ public class ModuleController(LmsContext lmsContext) : ControllerBase
                 EndDate = m.EndDate,
                 ImageURL = m.ImageURL
             }).ToListAsync();
+    }
+
+    [HttpGet("{moduleId}")]
+    public async Task<ActionResult<ModuleDto>> getModule(int courseId, int moduleId)
+    {
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> createModule(int courseId)
+    {
+        return BadRequest();
+    }
+
+    [HttpPut("{moduleId}")]
+    [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> updateModule(int courseId, int moduleId)
+    {
+        return BadRequest();
+    }
+
+    [HttpDelete("{moduleId}")]
+    [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> deleteModule(int courseId, int moduleId)
+    {
+        return BadRequest();
     }
 }
