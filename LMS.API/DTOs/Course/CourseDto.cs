@@ -13,7 +13,6 @@ namespace LMS.API.DTOs.Course
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
         public string? ImageURL { get; set; }
-        public List<CourseModuleDto> Modules { get; set; } = [];
         public List<CourseResourceDto> Resources { get; set; } = [];
         public List<UserDto> Users { get; set; } = [];
     }
