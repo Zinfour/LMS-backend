@@ -1,8 +1,6 @@
-﻿using LMS.API.Models;
-
-namespace LMS.API.DTOs.Course
+﻿namespace LMS.API.DTOs.Course
 {
-    public class CourseDto
+    public class CourseModuleDto
     {
         public int Id { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -13,8 +11,6 @@ namespace LMS.API.DTOs.Course
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
         public string? ImageURL { get; set; }
-        public List<CourseModuleDto> Modules { get; set; } = [];
         public List<CourseResourceDto> Resources { get; set; } = [];
-        public List<UserDto> Users { get; set; } = [];
     }
 }
