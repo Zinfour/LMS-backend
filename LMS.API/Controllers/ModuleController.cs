@@ -15,6 +15,8 @@ using LMS.API.Data;
 using LMS.API.DTOs;
 using LMS.API.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SQLitePCL;
@@ -22,14 +24,33 @@ using SQLitePCL;
 namespace LMS.API.Controllers;
 
 [ApiController]
-[Route("/api/courses/{courseId}/modules")]
-public class ModuleController(LmsContext lmsContext) : ControllerBase
+[Route("/api/courses/{id}/modules")]
+public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     private readonly LmsContext _context = lmsContext;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
+
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ModuleDto>>> getModules(int courseId)
+    public async Task<ActionResult<IEnumerable<ModuleDto>>> getModules(int id)
     {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return BadRequest("User not found.");
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
+        {
+            return BadRequest($"Invalid role.");
+        }
+
+        var courseId = roles.Contains(Role.Teacher) ? id : user.CourseId;
+        
+        
         var courseExists = await _context.Course.AnyAsync(c => c.Id == courseId);
         if (!courseExists)
         {
