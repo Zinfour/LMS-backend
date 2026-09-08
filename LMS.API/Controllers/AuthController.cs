@@ -45,6 +45,7 @@ namespace LMS.API.Controllers
             // Create "claims" (information we bake into the token)
             var claims = new List<Claim>
             {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Name, model.Username),
                 new Claim(ClaimTypes.Role, role)
             };
