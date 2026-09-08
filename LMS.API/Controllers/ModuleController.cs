@@ -72,28 +72,28 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
     }
 
     [HttpGet("{moduleId}")]
-    public async Task<ActionResult<ModuleDto>> getModule(int courseId, int moduleId)
+    public async Task<ActionResult<ModuleDto>> getModule(int id, int moduleId)
     {
         return BadRequest();
     }
 
     [HttpPost]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> createModule(int courseId)
+    public async Task<ActionResult> createModule(int id)
     {
         return BadRequest();
     }
 
     [HttpPut("{moduleId}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> updateModule(int courseId, int moduleId)
+    public async Task<ActionResult> updateModule(int id, int moduleId)
     {
         return BadRequest();
     }
 
     [HttpDelete("{moduleId}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> deleteModule(int courseId, int moduleId)
+    public async Task<ActionResult> deleteModule(int id, int moduleId)
     {
         return BadRequest();
     }
