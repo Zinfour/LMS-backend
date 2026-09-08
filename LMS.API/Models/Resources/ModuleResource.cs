@@ -12,6 +12,8 @@ namespace LMS.API.Models
         public string? UpdatedByUserId { get; set; }
         public string? URL { get; set; }
         public ResourceType ResourceType { get; set; }
+        public string Name { get; set; } = null!;
+        public string Description { get; set; } = null!;
 
         public int ModuleId { get; set; }
         public Module Module { get; set; } = null!;
