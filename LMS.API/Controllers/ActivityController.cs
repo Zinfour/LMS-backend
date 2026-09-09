@@ -52,7 +52,7 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
             return BadRequest("Invalid ModuleId");
         }
 
-        return module.Activities.Select(a =>
+        var returnData = module.Activities.Select(a =>
         {
             var tempAssignment = a.Assignment;
             var assignment = tempAssignment == null ? null : new AssignmentDto
@@ -102,6 +102,8 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 Resources = resources
             };
         }).ToList();
+
+        return Ok(returnData);
     }
 
     [HttpGet]
@@ -168,7 +170,7 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 ResourceType = r.ResourceType.ToString(),
                 ActivityId = r.ActivityId
             }).ToList();
-        return new ActivityDto
+        var returnData = new ActivityDto
         {
             Id = activity.Id,
             CreatedAt = activity.CreatedAt,
@@ -183,6 +185,7 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
             Assignment = assignment,
             Resources = resources
         };
+        return Ok(returnData);
     }
 
     [HttpPost]
