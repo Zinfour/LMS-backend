@@ -103,7 +103,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
 
         if(module == null)
         {
-            return BadRequest("Invalid moduleId");
+            return BadRequest("Invalid ModuleId");
         }
 
         var activities = module.Activities.Select(a =>
