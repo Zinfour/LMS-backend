@@ -25,7 +25,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        public async Task<ActionResult<ResultModel>> Login([FromBody] LoginModel model)
         {
             var user = await _userManager.FindByNameAsync(model.Username);
 
@@ -62,7 +62,21 @@ namespace LMS.API.Controllers
                 signingCredentials: creds
             );
 
-            return Ok(new { Token = new JwtSecurityTokenHandler().WriteToken(token) });
+            var resultModel = new ResultModel
+            {
+                Id = user.Id,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                Email = user.Email ?? string.Empty,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty,
+                Role = role,
+                ImageUrl = user.ImageUrl,
+                CourseId = user.CourseId,
+                Token = token
+            };
+
+            return Ok(resultModel);
         }
     }
 }
