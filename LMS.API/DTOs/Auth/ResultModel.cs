@@ -16,6 +16,6 @@ namespace LMS.API.DTOs.Auth
 
         public int CourseId { get; set; }
 
-        public JwtSecurityToken Token { get; set; } = null!;
+        public string Token { get; set; } = null!;
     }
 }
