@@ -12,6 +12,7 @@ namespace LMS.API.Data
         public DbSet<Activity> Activity { get; set; } = default!;
         public DbSet<Assignment> Assignment { get; set; } = default!;
         public DbSet<Submission> Submission { get; set; } = default!;
+        public DbSet<Feedback> Feedback { get; set; } = default!;
 
         public DbSet<ActivityResource> ActivityResource { get; set; } = default!;
         public DbSet<CourseResource> CourseResource { get; set; } = default!;

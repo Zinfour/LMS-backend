@@ -14,5 +14,7 @@ namespace LMS.API.Models
 
         public int AssignmentId { get; set; }
         public Assignment Assignment { get; set; } = null!;
+
+        public LinkedList<Feedback> Feedbacks { get; set; } = new LinkedList<Feedback>();
     }
 }
