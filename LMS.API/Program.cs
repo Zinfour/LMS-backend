@@ -88,9 +88,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Seed database
+// Apply pending migrations (creates the database and tables if they don't exist yet) and seed database
 using (var scope = app.Services.CreateScope())
 {
+    var context = scope.ServiceProvider.GetRequiredService<LmsContext>();
+    await context.Database.MigrateAsync();
+
     await DbSeeder.SeedAsync(scope.ServiceProvider);
 }
 
