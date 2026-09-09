@@ -37,7 +37,9 @@ namespace LMS.API.DTOs;
 public class ActivityDto
 {
     public int Id { get; set; }
-    public string Type {get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string? Type {get; set; }
     public string Name { get; set; } = null!;
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
@@ -45,5 +47,6 @@ public class ActivityDto
     public string? ImageURL { get; set; }
     public int ModuleId { get; set; }
     public AssignmentDto? Assignment {get; set;}
+    public List<ActivityResourceDto> Resources {get; set;} = []; 
 
 }

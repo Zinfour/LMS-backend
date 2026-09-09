@@ -24,7 +24,7 @@ using SQLitePCL;
 namespace LMS.API.Controllers;
 
 [ApiController]
-[Route("/api/courses/{id}/modules")]
+[Route("/api/courses/{courseId}/modules")]
 public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     private readonly LmsContext _context = lmsContext;
@@ -32,7 +32,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
 
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ModuleDto>>> getModules(int id)
+    public async Task<ActionResult<IEnumerable<ModuleDto>>> getModules(int courseId)
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -48,17 +48,17 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             return BadRequest($"Invalid role.");
         }
 
-        var courseId = roles.Contains(Role.Teacher) ? id : user.CourseId;
+        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
         
         
-        var courseExists = await _context.Course.AnyAsync(c => c.Id == courseId);
+        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
         if (!courseExists)
         {
             return BadRequest("Invalid CourseId.");
         }
 
         return await _context.Module
-            .Where(m => m.CourseId == courseId)
+            .Where(m => m.CourseId == id)
             .Select(m => new ModuleDto
             {
                 Id = m.Id,
@@ -71,10 +71,70 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             }).ToListAsync();
     }
 
+
     [HttpGet("{moduleId}")]
-    public async Task<ActionResult<ModuleDto>> getModule(int id, int moduleId)
+    public async Task<ActionResult<ModuleDto>> getModule(int courseId, int moduleId)
     {
-        return BadRequest();
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return BadRequest("User not found.");
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
+        {
+            return BadRequest($"Invalid role.");
+        }
+
+        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
+        
+        
+        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
+        if (!courseExists)
+        {
+            return BadRequest("Invalid CourseId.");
+        }
+
+        return await _context.Module
+            .Where(m => m.CourseId == id && m.Id == moduleId)
+            .Select(m => {
+                var activities = m.Activities.Select(a => new ActivityDto
+                {
+                    Id = a.Id,
+                    Type = a.Type.ToString(),
+                    Name = a.Name,
+                    StartTime = a.StartTime,
+                    EndTime = a.EndTime,
+                    Description = a.Description,
+                    ImageURL = a.ImageURL,
+                    ModuleId = a.ModuleId,
+
+                });
+                var resources = m.Resources.Select(r => new ModuleResourceDto
+                {
+                    Id = r.Id,
+                    CreatedByUserId = r.CreatedByUserId,
+                    UpdatedByUserId = r.UpdatedByUserId,
+                    URL = r.URL,
+                    ResourceType = r.ResourceType.ToString(),
+                    ModuleId = r.ModuleId
+                }).ToList();
+                new ModuleFullDto
+                {
+                    Id = m.Id,
+                    CreatedAt = m.CreatedAt,
+                    UpdatedAt = m.UpdatedAt,
+                    Name = m.Name,
+                    Description = m.Description,
+                    StartDate = m.StartDate,
+                    EndDate = m.EndDate,
+                    ImageURL = m.ImageURL,
+                    Resources = resources
+                }
+            });
     }
 
     [HttpPost]
