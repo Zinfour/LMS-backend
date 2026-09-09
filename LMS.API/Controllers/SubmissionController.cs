@@ -19,7 +19,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
     [HttpGet("api/users/{id}/submissions")]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<Submission>>> GetSubmissions(string id)
+    public async Task<ActionResult<IEnumerable<SubmissionDto>>> GetSubmissions(string id)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -51,7 +51,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
             SubmittedAt = s.SubmittedAt,
             StudentId = s.StudentId,
             AssignmentId = s.AssignmentId,
-            Feedbacks = s.Feedbacks.Select(f => new FeedbackDto
+            Feedback = s.Feedbacks.Select(f => new FeedbackDto
             {
                 Id = f.Id,
                 CreatedAt = f.CreatedAt,
@@ -66,7 +66,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
     [HttpPost("api/submissions")]
     [Authorize(Roles = Role.Student)]
-    public async Task<ActionResult<SubmissionDto>> CreateSubmission([FromBody] SubmissionDto submissionDto)
+    public async Task<ActionResult<SubmissionDto>> CreateSubmission([FromBody] CreateSubmissionDto submissionDto)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -118,7 +118,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
     [HttpPost("api/submissions/{id}/feedback")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<FeedbackDto>> AddFeedback(int id, [FromBody] FeedbackDto feedbackDto)
+    public async Task<ActionResult<FeedbackDto>> AddFeedback(int id, [FromBody] CreateFeedbackDto feedbackDto)
     {
         var submission = await _context.Submission.FindAsync(id);
         if (submission == null)
@@ -150,9 +150,9 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         return CreatedAtAction(nameof(GetFeedback), new { id = submission.Id }, feedbackDto);
     }
 
-    [HttpDelete("api/submissions/{submissionId}/feedback/{feedbackId}")]
+    [HttpDelete("api/feedback/{feedbackId}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> DeleteFeedback(int submissionId, int feedbackId)
+    public async Task<ActionResult> DeleteFeedback(int feedbackId)
     {
         var feedback = await _context.Feedback.FindAsync(feedbackId);
         if (feedback == null)

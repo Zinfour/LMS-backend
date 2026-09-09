@@ -1,6 +1,6 @@
 namespace LMS.API.DTOs;
 
-public class SubmissionDto
+public class CreateSubmissionDto
 {
     public int Id { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -9,6 +9,4 @@ public class SubmissionDto
     public DateTime SubmittedAt { get; set; }
     public string StudentId { get; set; } = null!;
     public int AssignmentId { get; set; }
-
-    public List<FeedbackDto> Feedback { get; set; } = new List<FeedbackDto>();
 }
