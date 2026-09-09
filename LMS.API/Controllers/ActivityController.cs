@@ -129,17 +129,60 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
         {
             return BadRequest("Invalid ModuleId");
         }
-        var activity = module.Activities.Where(a => a.Id == activityId).FirstOrDefault();
+        var activity = module.Activities.FirstOrDefault(a => a.Id == activityId);
 
         if(activity == null)
         {
             return BadRequest("Invalid ActivityId");
         }
 
-        
-
-
-        return BadRequest();
+        var tempAssignment = activity.Assignment;
+        var assignment = tempAssignment == null ? null : new AssignmentDto
+            {
+                Id = tempAssignment.Id,
+                CreatedAt = tempAssignment.CreatedAt,
+                UpdatedAt = tempAssignment.UpdatedAt,
+                Title = tempAssignment.Title,
+                Description = tempAssignment.Description,
+                Deadline = tempAssignment.Deadline,
+                ActivityId = tempAssignment.ActivityId,
+                Submissions = tempAssignment.Submissions.Select(s => new SubmissionDto
+                {
+                    Id = s.Id,
+                    CreatedAt = s.CreatedAt,
+                    UpdatedAt = s.UpdatedAt,
+                    SubmittedAt = s.SubmittedAt,
+                    Text = s.Text,
+                    StudentId = s.StudentId,
+                    AssignmentId = s.AssignmentId
+                }).ToList()
+            };
+        var resources = activity.Resources.Select(r => new ActivityResourceDto
+            {
+                Id = r.Id,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt,
+                CreatedByUserId = r.CreatedByUserId,
+                UpdatedByUserId = r.UpdatedByUserId,
+                URL = r.URL,
+                ResourceType = r.ResourceType.ToString(),
+                ActivityId = r.ActivityId
+            }).ToList();
+        return new ActivityDto
+        {
+            Id = activity.Id,
+            CreatedAt = activity.CreatedAt,
+            UpdatedAt = activity.UpdatedAt,
+            Type = activity.Type.ToString(),
+            Name = activity.Name,
+            StartTime = activity.StartTime,
+            EndTime = activity.EndTime,
+            Description = activity.Description,
+            ImageURL = activity.ImageURL,
+            ModuleId = activity.ModuleId,
+            Assignment = assignment,
+            Resources = resources
+        };
     }
 
     [HttpPost]
