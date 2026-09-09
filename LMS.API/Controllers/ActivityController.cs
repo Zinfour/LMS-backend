@@ -2,6 +2,8 @@ using LMS.API.Data;
 using LMS.API.DTOs;
 using LMS.API.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -100,5 +102,32 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 Resources = resources
             };
         }).ToList();
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<ActivityDto>> GetActivity(int courseId, int moduleId, int activityId)
+    {
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> CreateActivity()
+    {
+        return BadRequest();
+    }
+
+    [HttpPut]
+    [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> UpdateActivity()
+    {
+        return BadRequest();
+    }
+
+    [HttpDelete]
+    [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> DeleteActivity()
+    {
+        return BadRequest();
     }
 }
