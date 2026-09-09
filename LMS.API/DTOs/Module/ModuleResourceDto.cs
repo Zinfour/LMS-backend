@@ -41,6 +41,5 @@ public class ModuleResourceDto
     public string? UpdatedByUserId { get; set; }
     public string? URL { get; set; }
     public string? ResourceType { get; set; }
-
     public int ModuleId { get; set; }
 }

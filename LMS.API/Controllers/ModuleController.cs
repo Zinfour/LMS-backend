@@ -32,7 +32,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
 
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ModuleDto>>> getModules(int courseId)
+    public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules(int courseId)
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -73,7 +73,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
 
 
     [HttpGet("{moduleId}")]
-    public async Task<ActionResult<ModuleDto>> getModule(int courseId, int moduleId)
+    public async Task<ActionResult<ModuleFullDto>> GetModule(int courseId, int moduleId)
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -98,12 +98,53 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             return BadRequest("Invalid CourseId.");
         }
 
-        return await _context.Module
-            .Where(m => m.CourseId == id && m.Id == moduleId)
-            .Select(m => {
-                var activities = m.Activities.Select(a => new ActivityDto
+
+        var module = await _context.Module.Where(m => m.CourseId == id && m.Id == moduleId).FirstOrDefaultAsync();
+
+        if(module == null)
+        {
+            return BadRequest("Invalid moduleId");
+        }
+
+        var activities = module.Activities.Select(a =>
+            {
+                var tempAssignment = a.Assignment;
+                var assignment = tempAssignment == null ? null : new AssignmentDto
+                {
+                    Id = tempAssignment.Id,
+                    CreatedAt = tempAssignment.CreatedAt,
+                    UpdatedAt = tempAssignment.UpdatedAt,
+                    Title = tempAssignment.Title,
+                    Description = tempAssignment.Description,
+                    Deadline = tempAssignment.Deadline,
+                    ActivityId = tempAssignment.ActivityId,
+                    Submissions = tempAssignment.Submissions.Select(s => new SubmissionDto
+                    {
+                        Id = s.Id,
+                        CreatedAt = s.CreatedAt,
+                        UpdatedAt = s.UpdatedAt,
+                        SubmittedAt = s.SubmittedAt,
+                        Text = s.Text,
+                        StudentId = s.StudentId,
+                        AssignmentId = s.AssignmentId
+                    }).ToList()
+                };
+                var resources = a.Resources.Select(r => new ActivityResourceDto
+                {
+                    Id = r.Id,
+                    CreatedAt = r.CreatedAt,
+                    UpdatedAt = r.UpdatedAt,
+                    CreatedByUserId = r.CreatedByUserId,
+                    UpdatedByUserId = r.UpdatedByUserId,
+                    URL = r.URL,
+                    ResourceType = r.ResourceType.ToString(),
+                    ActivityId = r.ActivityId
+                }).ToList();
+                return new ActivityDto
                 {
                     Id = a.Id,
+                    CreatedAt = a.CreatedAt,
+                    UpdatedAt = a.UpdatedAt,
                     Type = a.Type.ToString(),
                     Name = a.Name,
                     StartTime = a.StartTime,
@@ -111,30 +152,121 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                     Description = a.Description,
                     ImageURL = a.ImageURL,
                     ModuleId = a.ModuleId,
-
-                });
-                var resources = m.Resources.Select(r => new ModuleResourceDto
-                {
-                    Id = r.Id,
-                    CreatedByUserId = r.CreatedByUserId,
-                    UpdatedByUserId = r.UpdatedByUserId,
-                    URL = r.URL,
-                    ResourceType = r.ResourceType.ToString(),
-                    ModuleId = r.ModuleId
-                }).ToList();
-                new ModuleFullDto
-                {
-                    Id = m.Id,
-                    CreatedAt = m.CreatedAt,
-                    UpdatedAt = m.UpdatedAt,
-                    Name = m.Name,
-                    Description = m.Description,
-                    StartDate = m.StartDate,
-                    EndDate = m.EndDate,
-                    ImageURL = m.ImageURL,
+                    Assignment = assignment,
                     Resources = resources
-                }
-            });
+                };
+            }).ToList();
+
+        var resources = module.Resources.Select(r => new ModuleResourceDto
+            {
+                Id = r.Id,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt,
+                CreatedByUserId = r.CreatedByUserId,
+                UpdatedByUserId = r.UpdatedByUserId,
+                URL = r.URL,
+                ResourceType = r.ResourceType.ToString(),
+                ModuleId = r.ModuleId
+            }).ToList();
+
+        return new ModuleFullDto
+        {
+            Id = module.Id,
+            CreatedAt = module.CreatedAt,
+            UpdatedAt = module.UpdatedAt,
+            Name = module.Name,
+            Description = module.Description,
+            StartDate = module.StartDate,
+            EndDate = module.EndDate,
+            ImageURL = module.ImageURL,
+            Activities = activities,
+            Resources = resources,
+            CourseId = module.CourseId
+        };
+
+        // var module = await _context.Module
+        //     .Where(m => m.CourseId == id && m.Id == moduleId)
+        //     .FirstOrDefaultAsync()
+        //     .Select(m => 
+        //     {
+        //         var activities = m.Activities.Select(a =>
+        //         {
+        //             var tempAssignment = a.Assignment;
+        //             var assignment = tempAssignment == null ? null : new AssignmentDto
+        //             {
+        //                 Id = tempAssignment.Id,
+        //                 CreatedAt = tempAssignment.CreatedAt,
+        //                 UpdatedAt = tempAssignment.UpdatedAt,
+        //                 Title = tempAssignment.Title,
+        //                 Description = tempAssignment.Description,
+        //                 Deadline = tempAssignment.Deadline,
+        //                 ActivityId = tempAssignment.ActivityId,
+        //                 Submissions = tempAssignment.Submissions.Select(s => new SubmissionDto
+        //                 {
+        //                     Id = s.Id,
+        //                     CreatedAt = s.CreatedAt,
+        //                     UpdatedAt = s.UpdatedAt,
+        //                     SubmittedAt = s.SubmittedAt,
+        //                     Text = s.Text,
+        //                     StudentId = s.StudentId,
+        //                     AssignmentId = s.AssignmentId
+        //                 }).ToList()
+        //             };
+        //             var resources = a.Resources.Select(r => new ActivityResourceDto
+        //             {
+        //                 Id = r.Id,
+        //                 CreatedAt = r.CreatedAt,
+        //                 UpdatedAt = r.UpdatedAt,
+        //                 CreatedByUserId = r.CreatedByUserId,
+        //                 UpdatedByUserId = r.UpdatedByUserId,
+        //                 URL = r.URL,
+        //                 ResourceType = r.ResourceType.ToString(),
+        //                 ActivityId = r.ActivityId
+        //             }).ToList();
+        //             return new ActivityDto
+        //             {
+        //                 Id = a.Id,
+        //                 CreatedAt = a.CreatedAt,
+        //                 UpdatedAt = a.UpdatedAt,
+        //                 Type = a.Type.ToString(),
+        //                 Name = a.Name,
+        //                 StartTime = a.StartTime,
+        //                 EndTime = a.EndTime,
+        //                 Description = a.Description,
+        //                 ImageURL = a.ImageURL,
+        //                 ModuleId = a.ModuleId,
+        //                 Assignment = assignment,
+        //                 Resources = resources
+        //             };
+        //         }).ToList();
+        //         var resources = m.Resources.Select(r => new ModuleResourceDto
+        //         {
+        //             Id = r.Id,
+        //             CreatedAt = r.CreatedAt,
+        //             UpdatedAt = r.UpdatedAt,
+        //             CreatedByUserId = r.CreatedByUserId,
+        //             UpdatedByUserId = r.UpdatedByUserId,
+        //             URL = r.URL,
+        //             ResourceType = r.ResourceType.ToString(),
+        //             ModuleId = r.ModuleId
+        //         }).ToList();
+        //         return new ModuleFullDto
+        //         {
+        //             Id = m.Id,
+        //             CreatedAt = m.CreatedAt,
+        //             UpdatedAt = m.UpdatedAt,
+        //             Name = m.Name,
+        //             Description = m.Description,
+        //             StartDate = m.StartDate,
+        //             EndDate = m.EndDate,
+        //             ImageURL = m.ImageURL,
+        //             Activities = activities,
+        //             Resources = resources,
+        //             CourseId = m.CourseId
+        //         };
+        //     });
+        // return module;
+
     }
 
     [HttpPost]

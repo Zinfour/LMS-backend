@@ -39,6 +39,6 @@ public class ActivityResourceDto
     public string CreatedByUserId { get; set; } = null!;
     public string? UpdatedByUserId { get; set; }
     public string? URL { get; set; }
-    public string ResourceType { get; set; }
+    public string? ResourceType { get; set; }
     public int ActivityId { get; set; }
 }
