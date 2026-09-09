@@ -105,8 +105,40 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
     }
 
     [HttpGet]
+    [Route("{activityId}")]
     public async Task<ActionResult<ActivityDto>> GetActivity(int courseId, int moduleId, int activityId)
     {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return BadRequest("User not found.");
+        }
+        var roles = await _userManager.GetRolesAsync(user);
+        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
+        {
+            return BadRequest($"Invalid role.");
+        }
+        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
+        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
+        if (!courseExists)
+        {
+            return BadRequest("Invalid CourseId.");
+        }
+        var module = await _context.Module.Where(m => m.CourseId == id && m.Id == moduleId).FirstOrDefaultAsync();
+        if(module == null)
+        {
+            return BadRequest("Invalid ModuleId");
+        }
+        var activity = module.Activities.Where(a => a.Id == activityId).FirstOrDefault();
+
+        if(activity == null)
+        {
+            return BadRequest("Invalid ActivityId");
+        }
+
+        
+
+
         return BadRequest();
     }
 
