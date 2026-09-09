@@ -41,14 +41,31 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
                     URL = r.URL,
                     ResourceType = r.ResourceType
                 }).ToList(),
-                Users = c.Users.Select(u => new UserDto
+								Students = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student))
+									.Select(u => new UserDto{
+											Id = u.Id,
+											Email = u.Email ?? string.Empty,
+											FirstName = u.FirstName ?? string.Empty,
+											LastName = u.LastName ?? string.Empty,
+											ImageUrl = u.ImageUrl,
+									}).ToList(),
+								Teacher = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Teacher))
+									.Select(u => new UserDto{
+											Id = u.Id,
+											Email = u.Email ?? string.Empty,
+											FirstName = u.FirstName ?? string.Empty,
+											LastName = u.LastName ?? string.Empty,
+											ImageUrl = u.ImageUrl,
+									}).FirstOrDefault() ?? new UserDto(),
+            }).ToListAsync();
+    }
+/*
+Users = c.Users.Select(u => new UserDto
                 {
                     Id = u.Id,
                     Email = u.Email ?? string.Empty,
-                }).ToList(),
-            }).ToListAsync();
-    }
-
+                }).ToList()
+								*/
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<CourseDto>> GetCourse(int id)
@@ -92,11 +109,32 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
                     URL = r.URL,
                     ResourceType = r.ResourceType
                 }).ToList(),
-                Users = roles.Contains(Role.Teacher) ? c.Users.Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Email = u.Email ?? string.Empty,
-                }).ToList() : new List<UserDto>(),
+								Students = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student))
+									.Select(u => new UserDto{
+											Id = u.Id,
+											Email = u.Email ?? string.Empty,
+											FirstName = u.FirstName ?? string.Empty,
+											LastName = u.LastName ?? string.Empty,
+											ImageUrl = u.ImageUrl,
+									}).ToList(),
+								Teacher = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Teacher))
+									.Select(u => new UserDto{
+											Id = u.Id,
+											Email = u.Email ?? string.Empty,
+											FirstName = u.FirstName ?? string.Empty,
+											LastName = u.LastName ?? string.Empty,
+											ImageUrl = u.ImageUrl,
+									}).FirstOrDefault() ?? new UserDto(),
+								Modules = c.Modules.Select(m => new ModuleDto
+								{
+										Id = m.Id,
+										Name = m.Name,
+										Description = m.Description,
+										StartDate = m.StartDate,
+										EndDate = m.EndDate,
+										ImageURL = m.ImageURL,
+										CourseId = m.CourseId
+								}).ToList()
             })
             .FirstOrDefaultAsync();
 

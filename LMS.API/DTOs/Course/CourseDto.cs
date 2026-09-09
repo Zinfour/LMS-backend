@@ -14,6 +14,9 @@ namespace LMS.API.DTOs.Course
         public DateOnly EndDate { get; set; }
         public string? ImageURL { get; set; }
         public List<CourseResourceDto> Resources { get; set; } = [];
-        public List<UserDto> Users { get; set; } = [];
+				public List<ModuleDto> Modules { get; set; } = [];
+        public List<UserDto> Students { get; set; } = [];
+
+				public UserDto Teacher { get; set; } = null!;
     }
 }
