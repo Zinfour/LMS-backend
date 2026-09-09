@@ -62,6 +62,8 @@ namespace LMS.API.Controllers
                 signingCredentials: creds
             );
 
+						var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(token);
+
             var resultModel = new ResultModel
             {
                 Id = user.Id,
@@ -73,7 +75,7 @@ namespace LMS.API.Controllers
                 Role = role,
                 ImageUrl = user.ImageUrl,
                 CourseId = user.CourseId,
-                Token = token
+                Token = tokenToReturn
             };
 
             return Ok(resultModel);
