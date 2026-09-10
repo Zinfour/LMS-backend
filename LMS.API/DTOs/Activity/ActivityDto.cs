@@ -46,7 +46,7 @@ public class ActivityDto
     public string Description { get; set; } = null!;
     public string? ImageURL { get; set; }
     public int ModuleId { get; set; }
-		public bool Completed { get; set; }
+    public bool Completed { get; set; }
     public AssignmentDto? Assignment {get; set;}
     public List<ActivityResourceDto> Resources {get; set;} = []; 
 

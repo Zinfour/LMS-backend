@@ -53,7 +53,7 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 Description = a.Description,
                 ImageURL = a.ImageURL,
                 ModuleId = a.ModuleId,
-								Completed = a.CompletedUsers.Any(u => u.Id == userId),
+                Completed = a.CompletedUsers.Any(u => u.Id == userId),
                 Assignment = a.Assignment == null
                     ? null
                     : new AssignmentDto
@@ -132,7 +132,7 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 Description = a.Description,
                 ImageURL = a.ImageURL,
                 ModuleId = a.ModuleId,
-								Completed = a.CompletedUsers.Any(u => u.Id == userId),
+                Completed = a.CompletedUsers.Any(u => u.Id == userId),
                 Assignment = a.Assignment == null
                     ? null
                     : new AssignmentDto
