@@ -41,21 +41,19 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         {
             return NotFound($"User with ID {userId} not found.");
         }
-
+                
         var submissions = selectedUser.Submissions.Select(s => new SubmissionDto
         {
             Id = s.Id,
             CreatedAt = s.CreatedAt,
-            UpdatedAt = s.UpdatedAt,
             Text = s.Text,
-            SubmittedAt = s.SubmittedAt,
             StudentId = s.StudentId,
             AssignmentId = s.AssignmentId,
+            Overdue = s.Assignment != null && s.CreatedAt > s.Assignment.Deadline,
             Feedback = s.Feedbacks.Select(f => new FeedbackDto
             {
                 Id = f.Id,
                 CreatedAt = f.CreatedAt,
-                UpdatedAt = f.UpdatedAt,
                 Text = f.Text,
                 TeacherId = f.TeacherId
             }).ToList()
@@ -74,22 +72,25 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
             return BadRequest("Logged-in User not found.");
         }
 
+        var assignment = await _context.Assignment.FindAsync(submissionDto.AssignmentId);
+        if (assignment == null)
+        {
+            return NotFound($"Assignment with ID {submissionDto.AssignmentId} not found.");
+        }
+
         var submission = new Submission
         {
             Text = submissionDto.Text,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            SubmittedAt = DateTime.UtcNow,
             StudentId = user.Id,
-            AssignmentId = submissionDto.AssignmentId
+            AssignmentId = submissionDto.AssignmentId,
+            Overdue = DateTime.UtcNow > assignment.Deadline
         };
 
         _context.Submission.Add(submission);
         await _context.SaveChangesAsync();
         submissionDto.Id = submission.Id;
         submissionDto.CreatedAt = submission.CreatedAt;
-        submissionDto.UpdatedAt = submission.UpdatedAt;
-        submissionDto.SubmittedAt = submission.SubmittedAt;
         return CreatedAtAction(nameof(GetSubmissions), new { id = user.Id }, submissionDto);
     }
 
@@ -109,9 +110,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         {
             Id = f.Id,
             CreatedAt = f.CreatedAt,
-            UpdatedAt = f.UpdatedAt,
             Text = f.Text,
-            GivenAt = f.GivenAt,
             TeacherId = f.TeacherId
         }));
     }
@@ -135,7 +134,6 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         var feedback = new Feedback
         {
             Text = feedbackDto.Text,
-            GivenAt = DateTime.UtcNow,
             TeacherId = user.Id,
             SubmissionId = id
         };
@@ -144,8 +142,6 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         await _context.SaveChangesAsync();
         feedbackDto.Id = feedback.Id;
         feedbackDto.CreatedAt = feedback.CreatedAt;
-        feedbackDto.UpdatedAt = feedback.UpdatedAt;
-        feedbackDto.GivenAt = feedback.GivenAt;
         feedbackDto.TeacherId = feedback.TeacherId;
         return CreatedAtAction(nameof(GetFeedback), new { id = submission.Id }, feedbackDto);
     }
