@@ -91,6 +91,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         await _context.SaveChangesAsync();
         submissionDto.Id = submission.Id;
         submissionDto.CreatedAt = submission.CreatedAt;
+
         return CreatedAtAction(nameof(GetSubmissions), new { id = user.Id }, submissionDto);
     }
 
@@ -133,6 +134,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
         var feedback = new Feedback
         {
+            CreatedAt = DateTime.UtcNow,
             Text = feedbackDto.Text,
             TeacherId = user.Id,
             SubmissionId = id
@@ -143,6 +145,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         feedbackDto.Id = feedback.Id;
         feedbackDto.CreatedAt = feedback.CreatedAt;
         feedbackDto.TeacherId = feedback.TeacherId;
+
         return CreatedAtAction(nameof(GetFeedback), new { id = submission.Id }, feedbackDto);
     }
 
