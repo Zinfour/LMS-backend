@@ -62,7 +62,7 @@ public class ModuleResourcesController(LmsContext lmsContext, UserManager<Applic
 
     [HttpPost("api/modules/{id}/resources")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> CreateModuleResource(int id, [FromBody] CreateResourceDto resourceDto)
+    public async Task<ActionResult<ResourceDto>> CreateModuleResource(int id, [FromBody] CreateResourceDto createResourceDto)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -83,17 +83,20 @@ public class ModuleResourcesController(LmsContext lmsContext, UserManager<Applic
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = user.Id,
             UpdatedByUserId = user.Id,
-            Description = resourceDto.Description,
-            Name = resourceDto.Name,
-            URL = resourceDto.URL,
-            ResourceType = Tools.ParseResourceType(resourceDto.ResourceType.ToString())
+            Description = createResourceDto.Description,
+            Name = createResourceDto.Name,
+            URL = createResourceDto.URL,
+            ResourceType = Tools.ParseResourceType(createResourceDto.ResourceType.ToString())
         };
 
-        var result = new ResourceDto
+        _context.ModuleResource.Add(resource);
+        await _context.SaveChangesAsync();
+
+        var resourceDto = new ResourceDto
         {
             Id = resource.Id,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
+            CreatedAt = resource.CreatedAt,
+            UpdatedAt = resource.UpdatedAt,
             CreatedByUserId = resource.CreatedByUserId,
             UpdatedByUserId = resource.UpdatedByUserId,
             URL = resource.URL,
@@ -102,10 +105,7 @@ public class ModuleResourcesController(LmsContext lmsContext, UserManager<Applic
             Description = resource.Description,
         };
 
-        _context.ModuleResource.Add(resource);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetModuleResource), new { id = resource.Id }, resource);
+        return CreatedAtAction(nameof(GetModuleResource), new { id = resource.Id }, resourceDto);
     }
 
     [HttpPut("api/modules/resources/{id}")]

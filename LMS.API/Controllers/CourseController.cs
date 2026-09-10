@@ -150,35 +150,40 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
 
     [HttpPost]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> CreateCourse(CreateCourseDto dto)
+    public async Task<ActionResult> CreateCourse(CreateCourseDto createCourseDto)
     {
         var course = new Course
         {
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            Name = dto.Name,
-            Description = dto.Description,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            ImageURL = dto.ImageURL,
-            Resources = dto.Resources.Select(r => new CourseResource
-            {
-                Id = r.Id,
-                CreatedAt = r.CreatedAt,
-                UpdatedAt = r.UpdatedAt,
-                CreatedByUserId = r.CreatedByUserId,
-                UpdatedByUserId = r.UpdatedByUserId,
-                URL = r.URL,
-                ResourceType = r.ResourceType
-            }).ToList() 
-            ?? new List<CourseResource>(),
+            Name = createCourseDto.Name,
+            Description = createCourseDto.Description,
+            StartDate = createCourseDto.StartDate,
+            EndDate = createCourseDto.EndDate,
+            ImageURL = createCourseDto.ImageURL,
         };
 
         _context.Course.Add(course);
 
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
+        var courseDto = new CourseDto
+        {
+            Id = course.Id,
+            CreatedAt = course.CreatedAt,
+            UpdatedAt = course.UpdatedAt,
+            Name = course.Name,
+            Description = course.Description,
+            StartDate = course.StartDate,
+            EndDate = course.EndDate,
+            ImageURL = course.ImageURL,
+            Resources = [],
+            Modules = [],
+            Students = [],
+            Teacher = null,
+        };
+
+        return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, courseDto);
     }
 
     [HttpPut("{id}")]

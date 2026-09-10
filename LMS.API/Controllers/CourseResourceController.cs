@@ -81,7 +81,7 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
 
     [HttpPost("api/courses/{id}/resources")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> CreateCourseResource(int id, [FromBody] CreateResourceDto resourceDto)
+    public async Task<ActionResult<ResourceDto>> CreateCourseResource(int id, [FromBody] CreateResourceDto createResourceDto)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -102,13 +102,16 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = user.Id,
             UpdatedByUserId = user.Id,
-            Description = resourceDto.Description,
-            Name = resourceDto.Name,
-            URL = resourceDto.URL,
-            ResourceType = Tools.ParseResourceType(resourceDto.ResourceType.ToString())
+            Description = createResourceDto.Description,
+            Name = createResourceDto.Name,
+            URL = createResourceDto.URL,
+            ResourceType = Tools.ParseResourceType(createResourceDto.ResourceType.ToString())
         };
 
-        var result = new ResourceDto
+        _context.CourseResource.Add(resource);
+        await _context.SaveChangesAsync();
+
+        var resourceDto = new ResourceDto
         {
             Id = resource.Id,
             CreatedAt = resource.CreatedAt,
@@ -119,13 +122,9 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
             ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
             Name = resource.Name,
             Description = resource.Description,
-            CourseId = resource.CourseId
         };
 
-        _context.CourseResource.Add(resource);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetCourseResource), new { id = resource.Id }, resource);
+        return CreatedAtAction(nameof(GetCourseResource), new { id = resource.Id }, resourceDto);
     }
 
     [HttpPut("api/courses/resources/{id}")]
