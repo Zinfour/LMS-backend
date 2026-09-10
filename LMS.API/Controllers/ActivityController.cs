@@ -6,85 +6,42 @@ using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LMS.API.Controllers;
 
 [ApiController]
-[Route("/api/course/{courseId}/modules/{moduleId}/activities")]
+[Route("/api/activities")]
 public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     private readonly LmsContext _context = lmsContext;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-
-
-
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetActivities(int courseId, int moduleId)
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<ActivityDto>>> GetActivities([FromQuery] int? courseId, [FromQuery] int? moduleId)
     {
-        var user = await _userManager.GetUserAsync(User);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (user == null)
+        if (userId == null)
         {
-            return BadRequest("User not found.");
+            return Unauthorized();
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var isTeacher = User.IsInRole(Role.Teacher);
+        var isStudent = User.IsInRole(Role.Student);
 
-        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
+        if (!isTeacher && !isStudent)
         {
-            return BadRequest($"Invalid role.");
+            return BadRequest("Invalid role.");
         }
 
-        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
-        
-        
-        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
-        if (!courseExists)
-        {
-            return BadRequest("Invalid CourseId.");
-        }
-
-        var module = await _context.Module.Where(m => m.Id == moduleId).FirstOrDefaultAsync();
-
-        if(module == null)
-        {
-            return BadRequest("Invalid ModuleId");
-        }
-
-        return module.Activities.Select(a =>
-        {
-            var tempAssignment = a.Assignment;
-            var assignment = tempAssignment == null ? null : new AssignmentDto
-                {
-                    Id = tempAssignment.Id,
-                    CreatedAt = tempAssignment.CreatedAt,
-                    UpdatedAt = tempAssignment.UpdatedAt,
-                    Title = tempAssignment.Title,
-                    Description = tempAssignment.Description,
-                    Deadline = tempAssignment.Deadline,
-                    ActivityId = tempAssignment.ActivityId,
-                    Submissions = tempAssignment.Submissions.Select(s => new SubmissionDto
-                    {
-                        Id = s.Id,
-                        CreatedAt = s.CreatedAt,
-                        Text = s.Text,
-                        StudentId = s.StudentId,
-                        AssignmentId = s.AssignmentId
-                    }).ToList()
-                };
-            var resources = a.Resources.Select(r => new ActivityResourceDto
-                {
-                    Id = r.Id,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt,
-                    CreatedByUserId = r.CreatedByUserId,
-                    UpdatedByUserId = r.UpdatedByUserId,
-                    URL = r.URL,
-                    ResourceType = r.ResourceType.ToString(),
-                    ActivityId = r.ActivityId
-                }).ToList();
-            return new ActivityDto
+        var activities = await _context.Activity
+            .Where(a =>
+                (courseId == null || a.Module.CourseId == courseId) &&
+                (moduleId == null || a.ModuleId == moduleId) &&
+                (isTeacher || a.Module.Course.Users.Any(u => u.Id == userId)))
+            .Select(a => new ActivityDto
             {
                 Id = a.Id,
                 CreatedAt = a.CreatedAt,
@@ -96,89 +53,132 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 Description = a.Description,
                 ImageURL = a.ImageURL,
                 ModuleId = a.ModuleId,
-                Assignment = assignment,
-                Resources = resources
-            };
-        }).ToList();
+
+                Assignment = a.Assignment == null
+                    ? null
+                    : new AssignmentDto
+                    {
+                        Id = a.Assignment.Id,
+                        CreatedAt = a.Assignment.CreatedAt,
+                        UpdatedAt = a.Assignment.UpdatedAt,
+                        Title = a.Assignment.Title,
+                        Description = a.Assignment.Description,
+                        Deadline = a.Assignment.Deadline,
+                        ActivityId = a.Assignment.ActivityId,
+                        Submissions = a.Assignment.Submissions
+                            .Select(s => new SubmissionDto
+                            {
+                                Id = s.Id,
+                                CreatedAt = s.CreatedAt,
+                                Text = s.Text,
+                                StudentId = s.StudentId,
+                                AssignmentId = s.AssignmentId
+                            })
+                            .ToList()
+                    },
+
+                Resources = a.Resources
+                    .Select(r => new ActivityResourceDto
+                    {
+                        Id = r.Id,
+                        CreatedAt = r.CreatedAt,
+                        UpdatedAt = r.UpdatedAt,
+                        CreatedByUserId = r.CreatedByUserId,
+                        UpdatedByUserId = r.UpdatedByUserId,
+                        URL = r.URL,
+                        ResourceType = r.ResourceType.ToString(),
+                        ActivityId = r.ActivityId
+                    })
+                    .ToList()
+            })
+            .ToListAsync();
+
+        return activities;
     }
 
-    [HttpGet]
-    [Route("{activityId}")]
-    public async Task<ActionResult<ActivityDto>> GetActivity(int courseId, int moduleId, int activityId)
+    [HttpGet("{activityId}")]
+    [Authorize]
+    public async Task<ActionResult<ActivityDto>> GetActivity(int activityId)
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-        {
-            return BadRequest("User not found.");
-        }
-        var roles = await _userManager.GetRolesAsync(user);
-        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
-        {
-            return BadRequest($"Invalid role.");
-        }
-        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
-        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
-        if (!courseExists)
-        {
-            return BadRequest("Invalid CourseId.");
-        }
-        var module = await _context.Module.Where(m => m.CourseId == id && m.Id == moduleId).FirstOrDefaultAsync();
-        if(module == null)
-        {
-            return BadRequest("Invalid ModuleId");
-        }
-        var activity = module.Activities.FirstOrDefault(a => a.Id == activityId);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if(activity == null)
+        if (userId == null)
         {
-            return BadRequest("Invalid ActivityId");
+            return Unauthorized();
         }
 
-        var tempAssignment = activity.Assignment;
-        var assignment = tempAssignment == null ? null : new AssignmentDto
-            {
-                Id = tempAssignment.Id,
-                CreatedAt = tempAssignment.CreatedAt,
-                UpdatedAt = tempAssignment.UpdatedAt,
-                Title = tempAssignment.Title,
-                Description = tempAssignment.Description,
-                Deadline = tempAssignment.Deadline,
-                ActivityId = tempAssignment.ActivityId,
-                Submissions = tempAssignment.Submissions.Select(s => new SubmissionDto
-                {
-                    Id = s.Id,
-                    CreatedAt = s.CreatedAt,
-                    Text = s.Text,
-                    StudentId = s.StudentId,
-                    AssignmentId = s.AssignmentId
-                }).ToList()
-            };
-        var resources = activity.Resources.Select(r => new ActivityResourceDto
-            {
-                Id = r.Id,
-                CreatedAt = r.CreatedAt,
-                UpdatedAt = r.UpdatedAt,
-                CreatedByUserId = r.CreatedByUserId,
-                UpdatedByUserId = r.UpdatedByUserId,
-                URL = r.URL,
-                ResourceType = r.ResourceType.ToString(),
-                ActivityId = r.ActivityId
-            }).ToList();
-        return new ActivityDto
+        var isTeacher = User.IsInRole(Role.Teacher);
+        var isStudent = User.IsInRole(Role.Student);
+
+        if (!isTeacher && !isStudent)
         {
-            Id = activity.Id,
-            CreatedAt = activity.CreatedAt,
-            UpdatedAt = activity.UpdatedAt,
-            Type = activity.Type.ToString(),
-            Name = activity.Name,
-            StartTime = activity.StartTime,
-            EndTime = activity.EndTime,
-            Description = activity.Description,
-            ImageURL = activity.ImageURL,
-            ModuleId = activity.ModuleId,
-            Assignment = assignment,
-            Resources = resources
-        };
+            return BadRequest("Invalid role.");
+        }
+
+        var activity = await _context.Activity
+            .Where(a =>
+                a.Id == activityId &&
+                (isTeacher || a.Module.Course.Users.Any(u =>
+                    u.Id == userId)))
+            .Select(a => new ActivityDto
+            {
+                Id = a.Id,
+                CreatedAt = a.CreatedAt,
+                UpdatedAt = a.UpdatedAt,
+                Type = a.Type.ToString(),
+                Name = a.Name,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime,
+                Description = a.Description,
+                ImageURL = a.ImageURL,
+                ModuleId = a.ModuleId,
+
+                Assignment = a.Assignment == null
+                    ? null
+                    : new AssignmentDto
+                    {
+                        Id = a.Assignment.Id,
+                        CreatedAt = a.Assignment.CreatedAt,
+                        UpdatedAt = a.Assignment.UpdatedAt,
+                        Title = a.Assignment.Title,
+                        Description = a.Assignment.Description,
+                        Deadline = a.Assignment.Deadline,
+                        ActivityId = a.Assignment.ActivityId,
+
+                        Submissions = a.Assignment.Submissions
+                            .Select(s => new SubmissionDto
+                            {
+                                Id = s.Id,
+                                CreatedAt = s.CreatedAt,
+                                Text = s.Text,
+                                StudentId = s.StudentId,
+                                AssignmentId = s.AssignmentId
+                            })
+                            .ToList()
+                    },
+
+                Resources = a.Resources
+                    .Select(r => new ActivityResourceDto
+                    {
+                        Id = r.Id,
+                        CreatedAt = r.CreatedAt,
+                        UpdatedAt = r.UpdatedAt,
+                        CreatedByUserId = r.CreatedByUserId,
+                        UpdatedByUserId = r.UpdatedByUserId,
+                        URL = r.URL,
+                        ResourceType = r.ResourceType.ToString(),
+                        ActivityId = r.ActivityId
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (activity == null)
+        {
+            return NotFound($"Couldn't find activity with id: {activityId}.");
+        }
+
+        return activity;
     }
 
     [HttpPost]
@@ -202,18 +202,18 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
         return BadRequest();
     }
 
-    [HttpPost("{activityId}/{userId}")]
+    [HttpPost("{activityId}/complete/{userId}")]
     [Authorize]
     public async Task<ActionResult> CompleteActivity(int activityId, string userId)
     {
-        var currentUser = await _userManager.GetUserAsync(User);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (currentUser == null)
+        if (currentUserId == null)
         {
             return Unauthorized();
         }
 
-        if (!User.IsInRole(Role.Teacher) && currentUser.Id != userId)
+        if (!User.IsInRole(Role.Teacher) && currentUserId != userId)
         {
             return Forbid();
         }
