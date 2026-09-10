@@ -11,4 +11,5 @@ public class ModuleDto
     public int ActivitiesNumber {get; set;}
     public int ResourcesNumber {get; set;}
     public int NumberOfCompletedActivities { get; set; }
+    public int Order {get; set;}
 }
