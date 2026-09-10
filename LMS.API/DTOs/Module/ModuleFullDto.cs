@@ -16,4 +16,5 @@ public class ModuleFullDto
     
     public int CourseId { get; set; }
     public int TotalNumberOfModules { get; set; }
+    public int Order {get; set;}
 }

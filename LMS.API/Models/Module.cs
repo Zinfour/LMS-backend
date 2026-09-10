@@ -16,5 +16,11 @@ namespace LMS.API.Models
         
         public int CourseId { get; set; }
         public Course Course { get; set; } = null!;
+
+        public int Order
+        {
+            get;
+            set => field = Course.Modules.Where(m => m.StartDate < StartDate).ToList().Count;
+        }
     }
 }

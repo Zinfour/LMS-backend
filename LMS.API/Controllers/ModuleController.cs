@@ -57,7 +57,8 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 CourseId = m.CourseId,
                 ActivitiesNumber = m.Activities.Count,
                 ResourcesNumber = m.Resources.Count,
-                NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count
+                NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
+                Order = m.Order
             }).ToListAsync();
     }
 
@@ -170,7 +171,8 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             Activities = activities,
             Resources = resources,
             CourseId = module.CourseId,
-            TotalNumberOfModules = _context.Course.FirstOrDefault(c => c.Id == module.CourseId)!.Modules.Count
+            TotalNumberOfModules = _context.Course.FirstOrDefault(c => c.Id == module.CourseId)!.Modules.Count,
+            Order = module.Order
         };
 
     }
