@@ -169,7 +169,8 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             ImageURL = module.ImageURL,
             Activities = activities,
             Resources = resources,
-            CourseId = module.CourseId
+            CourseId = module.CourseId,
+            TotalNumberOfModules = _context.Course.FirstOrDefault(c => c.Id == module.CourseId)!.Modules.Count
         };
 
     }
