@@ -80,6 +80,11 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
         var courseId = roles.Contains(Role.Teacher) ? id : user.CourseId;
 
         var course = await _context.Course
+            .Include(c => c.Resources)
+            .Include(c => c.Users)
+            .Include(c => c.Modules)
+              .ThenInclude(m => m.Activities)
+                .ThenInclude(a => a.CompletedUsers)
             .Where(c => c.Id == courseId)
             .Select(c => new CourseDto
             {
@@ -125,7 +130,12 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
                     StartDate = m.StartDate,
                     EndDate = m.EndDate,
                     ImageURL = m.ImageURL,
-                    CourseId = m.CourseId
+                    CourseId = m.CourseId,
+                    ActivitiesNumber = m.Activities.Count,
+                    ResourcesNumber = m.Resources.Count,
+                    NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
+                    Order = m.Order,
+                    CurrentStatus = Tools.calculateStatus(m, user)
                 }).ToList()
             })
             .FirstOrDefaultAsync();

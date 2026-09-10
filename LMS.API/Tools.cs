@@ -45,7 +45,7 @@ namespace LMS.API
             } else if(m.StartDate < currentDate && currentDate < m.EndDate)
             {
                 return Status.inProgress;
-            } else if(m.Activities.Where(a => !a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count == 0)
+            } else if(m.Activities.All(a => a.CompletedUsers.Any(u => u.Id == user.Id)))
             {
                 return Status.completed;
             } else

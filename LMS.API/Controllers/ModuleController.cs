@@ -91,7 +91,17 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
         }
 
 
-        var module = await _context.Module.Where(m => m.CourseId == id && m.Id == moduleId).FirstOrDefaultAsync();
+        var module = await _context.Module
+          .Include(m => m.Activities)
+              .ThenInclude(a => a.Assignment)
+                  .ThenInclude(asg => asg!.Submissions)
+          .Include(m => m.Activities)
+              .ThenInclude(a => a.Resources)
+          .Include(m => m.Activities)
+              .ThenInclude(a => a.CompletedUsers)
+          .Include(m => m.Resources)
+          .Where(m => m.CourseId == id && m.Id == moduleId)
+          .FirstOrDefaultAsync();
 
         if(module == null)
         {
@@ -143,7 +153,8 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                     ImageURL = a.ImageURL,
                     ModuleId = a.ModuleId,
                     Assignment = assignment,
-                    Resources = resources
+                    Resources = resources,
+                    Completed = a.CompletedUsers.Any(u => u.Id == user.Id)
                 };
             }).ToList();
 
@@ -156,7 +167,9 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 UpdatedByUserId = r.UpdatedByUserId,
                 URL = r.URL,
                 ResourceType = r.ResourceType.ToString(),
-                ModuleId = r.ModuleId
+                ModuleId = r.ModuleId,
+                Name = r.Name,
+                Description = r.Description,
             }).ToList();
 
         return new ModuleFullDto
@@ -172,7 +185,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             Activities = activities,
             Resources = resources,
             CourseId = module.CourseId,
-            TotalNumberOfModules = _context.Course.FirstOrDefault(c => c.Id == module.CourseId)!.Modules.Count,
+            TotalNumberOfModules = await _context.Module.CountAsync(m => m.CourseId == module.CourseId),
             Order = module.Order
         };
 
