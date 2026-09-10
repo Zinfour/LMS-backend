@@ -54,7 +54,10 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 StartDate = m.StartDate,
                 EndDate = m.EndDate,
                 ImageURL = m.ImageURL,
-                CourseId = m.CourseId
+                CourseId = m.CourseId,
+                ActivitiesNumber = m.Activities.Count,
+                ResourcesNumber = m.Resources.Count,
+                NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count
             }).ToListAsync();
     }
 

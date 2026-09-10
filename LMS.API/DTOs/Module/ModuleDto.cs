@@ -8,4 +8,7 @@ public class ModuleDto
     public DateOnly EndDate {get; set;}
     public string? ImageURL {get; set;}
     public int CourseId {get; set;}
+    public int ActivitiesNumber {get; set;}
+    public int ResourcesNumber {get; set;}
+    public int NumberOfCompletedActivities { get; set; }
 }
