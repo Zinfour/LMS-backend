@@ -12,4 +12,14 @@ public class ModuleDto
     public int ResourcesNumber {get; set;}
     public int NumberOfCompletedActivities { get; set; }
     public int Order {get; set;}
+
+    public Status CurrentStatus {get; set;}
+
+    public enum Status
+    {
+        completed,
+        overdue,
+        inProgress,
+        locked
+    }
 }

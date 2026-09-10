@@ -1,4 +1,9 @@
 ﻿using LMS.API.Models.Resources;
+using LMS.API.DTOs;
+using System.Reflection;
+using Module = LMS.API.Models.Module;
+using Status = LMS.API.DTOs.ModuleDto.Status;
+using LMS.API.Models;
 
 namespace LMS.API
 {
@@ -29,5 +34,25 @@ namespace LMS.API
                 _ => "TextMaterial"
             };
         }
+
+        
+        public static Status calculateStatus(Module m, ApplicationUser user)
+        {
+            DateOnly currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            if(currentDate < m.StartDate)
+            {
+                return Status.locked;
+            } else if(m.StartDate < currentDate && currentDate < m.EndDate)
+            {
+                return Status.inProgress;
+            } else if(m.Activities.Where(a => !a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count == 0)
+            {
+                return Status.completed;
+            } else
+            {
+                return Status.overdue;
+            }
+        }
     }
+
 }
