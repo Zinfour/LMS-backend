@@ -41,31 +41,23 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
                     URL = r.URL,
                     ResourceType = r.ResourceType
                 }).ToList(),
-								Students = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student))
-									.Select(u => new UserDto{
-											Id = u.Id,
-											Email = u.Email ?? string.Empty,
-											FirstName = u.FirstName ?? string.Empty,
-											LastName = u.LastName ?? string.Empty,
-											ImageUrl = u.ImageUrl,
-									}).ToList(),
-								Teacher = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Teacher))
-									.Select(u => new UserDto{
-											Id = u.Id,
-											Email = u.Email ?? string.Empty,
-											FirstName = u.FirstName ?? string.Empty,
-											LastName = u.LastName ?? string.Empty,
-											ImageUrl = u.ImageUrl,
-									}).FirstOrDefault() ?? new UserDto(),
+								Students = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student)).Select(u => new UserDto{
+										Id = u.Id,
+										Email = u.Email ?? string.Empty,
+										FirstName = u.FirstName ?? string.Empty,
+										LastName = u.LastName ?? string.Empty,
+										ImageUrl = u.ImageUrl,
+								}).ToList(),
+								Teacher = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Teacher)).Select(u => new UserDto{
+										Id = u.Id,
+										Email = u.Email ?? string.Empty,
+										FirstName = u.FirstName ?? string.Empty,
+										LastName = u.LastName ?? string.Empty,
+										ImageUrl = u.ImageUrl,
+								}).FirstOrDefault() ?? new UserDto(),
             }).ToListAsync();
     }
-/*
-Users = c.Users.Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Email = u.Email ?? string.Empty,
-                }).ToList()
-								*/
+
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<CourseDto>> GetCourse(int id)
