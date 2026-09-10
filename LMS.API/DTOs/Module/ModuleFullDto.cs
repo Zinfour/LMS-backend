@@ -15,4 +15,5 @@ public class ModuleFullDto
     public List<ModuleResourceDto> Resources { get; set; } = [];
     
     public int CourseId { get; set; }
+    public int TotalNumberOfModules { get; set; }
 }
