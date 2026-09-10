@@ -68,8 +68,6 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                     {
                         Id = s.Id,
                         CreatedAt = s.CreatedAt,
-                        UpdatedAt = s.UpdatedAt,
-                        SubmittedAt = s.SubmittedAt,
                         Text = s.Text,
                         StudentId = s.StudentId,
                         AssignmentId = s.AssignmentId
@@ -152,8 +150,6 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                 {
                     Id = s.Id,
                     CreatedAt = s.CreatedAt,
-                    UpdatedAt = s.UpdatedAt,
-                    SubmittedAt = s.SubmittedAt,
                     Text = s.Text,
                     StudentId = s.StudentId,
                     AssignmentId = s.AssignmentId

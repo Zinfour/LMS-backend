@@ -3,6 +3,7 @@ using System;
 using LMS.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMS.API.Migrations
 {
     [DbContext(typeof(LmsContext))]
-    partial class LmsContextModelSnapshot : ModelSnapshot
+    [Migration("20260909202003_FeedbackAndSubmissionFeedbackRelation")]
+    partial class FeedbackAndSubmissionFeedbackRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -342,6 +345,9 @@ namespace LMS.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("GivenAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SubmissionId")
                         .HasColumnType("INTEGER");
 
@@ -351,6 +357,9 @@ namespace LMS.API.Migrations
 
                     b.Property<string>("Text")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -460,15 +469,18 @@ namespace LMS.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("Overdue")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Text")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

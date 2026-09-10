@@ -3,6 +3,7 @@ using System;
 using LMS.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LMS.API.Migrations
 {
     [DbContext(typeof(LmsContext))]
-    partial class LmsContextModelSnapshot : ModelSnapshot
+    [Migration("20260908071530_AddFieldsToResources")]
+    partial class AddFieldsToResources
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -333,35 +336,6 @@ namespace LMS.API.Migrations
                     b.ToTable("CourseResource");
                 });
 
-            modelBuilder.Entity("LMS.API.Models.Feedback", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SubmissionId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("TeacherId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubmissionId");
-
-                    b.HasIndex("TeacherId");
-
-                    b.ToTable("Feedback");
-                });
-
             modelBuilder.Entity("LMS.API.Models.Module", b =>
                 {
                     b.Property<int>("Id")
@@ -460,15 +434,18 @@ namespace LMS.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("Overdue")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Text")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -659,25 +636,6 @@ namespace LMS.API.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("LMS.API.Models.Feedback", b =>
-                {
-                    b.HasOne("LMS.API.Models.Submission", "Submission")
-                        .WithMany("Feedbacks")
-                        .HasForeignKey("SubmissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LMS.API.Models.ApplicationUser", "Teacher")
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Submission");
-
-                    b.Navigation("Teacher");
-                });
-
             modelBuilder.Entity("LMS.API.Models.Module", b =>
                 {
                     b.HasOne("LMS.API.Models.Course", "Course")
@@ -812,11 +770,6 @@ namespace LMS.API.Migrations
                     b.Navigation("Activities");
 
                     b.Navigation("Resources");
-                });
-
-            modelBuilder.Entity("LMS.API.Models.Submission", b =>
-                {
-                    b.Navigation("Feedbacks");
                 });
 #pragma warning restore 612, 618
         }
