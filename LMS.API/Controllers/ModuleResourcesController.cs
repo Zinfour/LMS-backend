@@ -9,32 +9,16 @@ using Microsoft.EntityFrameworkCore;
 namespace LMS.API.Controllers;
 
 [ApiController]
-public class CourseResourceController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
+public class ModuleResourcesController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     private readonly LmsContext _context = lmsContext;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-    [HttpGet("api/courses/{id}/resources")]
+    [HttpGet("api/modules/{id}/resources")]
     [Authorize(Roles = Role.Teacher + "," + Role.Student)]
-    public async Task<ActionResult<IEnumerable<ResourceDto>>> GetCourseResources(int id)
+    public async Task<ActionResult<IEnumerable<ResourceDto>>> GetModuleResources(int id)
     {
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return BadRequest("User not found.");
-        }
-
-        var roles = await _userManager.GetRolesAsync(user);
-
-        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
-        {
-            return BadRequest($"Invalid role.");
-        }
-
-        var courseId = roles.Contains(Role.Teacher) ? id : user.CourseId;
-
-        var resources = await _context.CourseResource.Where(r => r.CourseId == courseId).ToListAsync();
+        var resources = await _context.ModuleResource.Where(r => r.ModuleId == id).ToListAsync();
         var resourceDtos = resources.Select(r => new ResourceDto
         {
             Id = r.Id,
@@ -46,20 +30,18 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
             ResourceType = Tools.ResourceTypeToString(r.ResourceType),
             Name = r.Name,
             Description = r.Description,
-            CourseId = r.CourseId
         });
-
         return Ok(resourceDtos);
     }
 
-    [HttpGet("api/courses/resources/{id}")]
+    [HttpGet("api/modules/resources/{id}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> GetCourseResource(int id)
+    public async Task<ActionResult<ResourceDto>> GetModuleResource(int id)
     {
-        var resource = await _context.CourseResource.FindAsync(id);
+        var resource = await _context.ModuleResource.FindAsync(id);
         if (resource == null)
         {
-            return NotFound($"Course resource with ID {id} not found.");
+            return NotFound($"Module resource with ID {id} not found.");
         }
 
         var resourceDto = new ResourceDto
@@ -73,15 +55,14 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
             ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
             Name = resource.Name,
             Description = resource.Description,
-            CourseId = resource.CourseId
         };
 
         return Ok(resourceDto);
     }
 
-    [HttpPost("api/courses/{id}/resources")]
+    [HttpPost("api/modules/{id}/resources")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> CreateCourseResource(int id, [FromBody] CreateResourceDto resourceDto)
+    public async Task<ActionResult<ResourceDto>> CreateModuleResource(int id, [FromBody] CreateResourceDto resourceDto)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -89,15 +70,15 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
             return BadRequest("Logged-in User not found.");
         }
 
-        var course = await _context.Course.FindAsync(id);
-        if (course == null)
+        var module = await _context.Module.FindAsync(id);
+        if (module == null)
         {
-            return NotFound($"Course with ID {id} not found.");
+            return NotFound($"Module with ID {id} not found.");
         }
 
-        var resource = new CourseResource
+        var resource = new ModuleResource
         {
-            CourseId = id,
+            ModuleId = id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = user.Id,
@@ -111,39 +92,38 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
         var result = new ResourceDto
         {
             Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = resource.CreatedByUserId,
             UpdatedByUserId = resource.UpdatedByUserId,
             URL = resource.URL,
             ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
             Name = resource.Name,
             Description = resource.Description,
-            CourseId = resource.CourseId
         };
 
-        _context.CourseResource.Add(resource);
+        _context.ModuleResource.Add(resource);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetCourseResource), new { id = resource.Id }, resource);
+        return CreatedAtAction(nameof(GetModuleResource), new { id = resource.Id }, resource);
     }
 
-    [HttpPut("api/courses/resources/{id}")]
+    [HttpPut("api/modules/resources/{id}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> UpdateCourseResource(int id, [FromBody] UpdateResourceDto resourceDto)
+    public async Task<ActionResult<ResourceDto>> UpdateModuleResource(int id, [FromBody] UpdateResourceDto resourceDto)
     {
-        var resource = await _context.CourseResource.FindAsync(id);
+        var resource = await _context.ModuleResource.FindAsync(id);
         if (resource == null)
         {
-            return NotFound($"Course resource with ID {id} not found.");
+            return NotFound($"Module resource with ID {id} not found.");
         }
-        
+
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
         {
             return BadRequest("Logged-in User not found.");
         }
-        
+
         resource.UpdatedByUserId = user.Id;
         resource.UpdatedAt = DateTime.UtcNow;
         resource.Description = resourceDto.Description;
@@ -162,25 +142,24 @@ public class CourseResourceController(LmsContext lmsContext, UserManager<Applica
             ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
             Name = resource.Name,
             Description = resource.Description,
-            CourseId = resource.CourseId
         };
 
         return Ok(result);
     }
 
-    [HttpDelete("api/courses/resources/{id}")]
+    [HttpDelete("api/modules/resources/{id}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<IActionResult> DeleteCourseResource(int id)
+    public async Task<IActionResult> DeleteModuleResource(int id)
     {
-        var resource = await _context.CourseResource.FindAsync(id);
+        var resource = await _context.ModuleResource.FindAsync(id);
         if (resource == null)
         {
-            return NotFound($"Course resource with ID {id} not found.");
+            return NotFound($"Module resource with ID {id} not found.");
         }
 
-        _context.CourseResource.Remove(resource);
+        _context.ModuleResource.Remove(resource);
         await _context.SaveChangesAsync();
-        
+
         return NoContent();
     }
 }
