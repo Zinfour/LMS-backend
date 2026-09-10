@@ -1,6 +1,4 @@
-﻿using LMS.API.Models.Resources;
-
-namespace LMS.API.DTOs.Resuorce
+﻿namespace LMS.API.DTOs.Resource
 {
     public class ResourceDto
     {

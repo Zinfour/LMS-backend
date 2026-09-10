@@ -201,4 +201,51 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
     {
         return BadRequest();
     }
+
+    [HttpPost("{activityId}/{userId}")]
+    [Authorize]
+    public async Task<ActionResult> CompleteActivity(int activityId, string userId)
+    {
+        var currentUser = await _userManager.GetUserAsync(User);
+
+        if (currentUser == null)
+        {
+            return Unauthorized();
+        }
+
+        if (!User.IsInRole(Role.Teacher) && currentUser.Id != userId)
+        {
+            return Forbid();
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+        {
+            return NotFound($"Couldn't find user with id: {userId}.");
+        }
+
+        var activity = await _context.Activity.FindAsync(activityId);
+
+        if (activity == null)
+        {
+            return NotFound($"Couldn't find activity with id: {activityId}.");
+        }
+
+        var alreadyCompleted = await _context.Activity
+            .Where(a => a.Id == activityId)
+            .SelectMany(a => a.CompletedUsers)
+            .AnyAsync(u => u.Id == userId);
+
+        if (alreadyCompleted)
+        {
+            return NoContent();
+        }
+
+        activity.CompletedUsers.Add(user);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
