@@ -6,6 +6,8 @@ public class ModuleResourceDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public string CreatedByUserId { get; set; } = null!;
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
     public string? UpdatedByUserId { get; set; }
     public string? URL { get; set; }
     public string? ResourceType { get; set; }
