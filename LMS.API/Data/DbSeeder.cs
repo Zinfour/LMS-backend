@@ -34,7 +34,7 @@ public static class DbSeeder
                 throw new Exception($"Failed to create role '{Role.Student}': {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
 
-        var course = await context.Course.FirstAsync(c => c.Name == "Machine Learning Fundamentals", cancellationToken);
+        var course = await context.Course.FirstAsync(c => c.Name == "Fullstack Developer", cancellationToken);
 
         var teacher = await userManager.FindByEmailAsync("teacher@gmail.com");
         if (teacher == null)
@@ -106,8 +106,8 @@ public static class DbSeeder
             CreatedByUserId = teacherId,
             ResourceType = ResourceType.Instruction,
             Name = "Course Guide",
-            Description = "Overview of the course structure, expectations, grading, and learning objectives.",
-            URL = "https://example.com/ml/course-guide"
+            Description = "Overview of the course structure, modules, activities and learning objectives.",
+            URL = null
         });
         course.Resources.Add(new CourseResource
         {
@@ -115,55 +115,55 @@ public static class DbSeeder
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = teacherId,
             ResourceType = ResourceType.Reference,
-            Name = "Python Documentation",
-            Description = "Official Python documentation for students who need to refresh their Python skills.",
-            URL = "https://docs.python.org/3/"
+            Name = "C# Documentation",
+            Description = "Official Microsoft documentation for the C# programming language and .NET platform.",
+            URL = "https://learn.microsoft.com/en-us/dotnet/csharp/"
         });
 
-        var introduction = course.Modules.First(m => m.Name == "Introduction to Machine Learning");
-        introduction.Resources.Add(new ModuleResource
+        var module1 = course.Modules.First(m => m.Name == "C# Fundamentals & OOP");
+        module1.Resources.Add(new ModuleResource
         {
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = teacherId,
             ResourceType = ResourceType.TextMaterial,
-            Name = "What Is Machine Learning?",
-            Description = "A beginner-friendly introduction to machine learning and its applications.",
-            URL = "https://example.com/ml/introduction"
+            Name = "OOP Concepts Overview",
+            Description = "A written overview of core object-oriented programming concepts: classes, objects, encapsulation and inheritance.",
+            URL = null
         });
-        introduction.Resources.Add(new ModuleResource
+        module1.Resources.Add(new ModuleResource
         {
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = teacherId,
             ResourceType = ResourceType.Summary,
-            Name = "ML Concepts Cheat Sheet",
-            Description = "Quick reference covering datasets, features, labels, models, and training.",
-            URL = "https://example.com/ml/cheatsheet"
+            Name = "C# Quick Reference",
+            Description = "Quick reference covering variables, control flow, methods and basic OOP syntax in C#.",
+            URL = null
         });
 
-        var seminar = introduction.Activities.First(a => a.Name == "What Is Machine Learning?");
-        seminar.Resources.Add(new ActivityResource
+        var githubDebug = module1.Activities.First(a => a.Name == "Getting Started: GitHub & Debugging");
+        githubDebug.Resources.Add(new ActivityResource
         {
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = teacherId,
             ResourceType = ResourceType.Instruction,
-            Name = "Seminar Instructions",
-            Description = "Review the pre-reading material before attending the seminar.",
-            URL = "https://example.com/ml/seminar-1"
+            Name = "Git & GitHub Guide",
+            Description = "Getting started guide for Git and GitHub, covering repositories, commits and pull requests.",
+            URL = "https://docs.github.com/en/get-started"
         });
 
-        var workflow = introduction.Activities.First(a => a.Name == "Machine Learning Workflow");
-        workflow.Resources.Add(new ActivityResource
+        var garage = module1.Activities.First(a => a.Name == "Garage (Collections & Arrays)");
+        garage.Resources.Add(new ActivityResource
         {
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedByUserId = teacherId,
             ResourceType = ResourceType.Link,
-            Name = "Interactive ML Workflow",
-            Description = "Interactive visualization of a typical machine learning workflow.",
-            URL = "https://example.com/ml/workflow"
+            Name = ".NET Collections Guide",
+            Description = "Overview of collection types available in .NET, used in the Garage exercise.",
+            URL = "https://learn.microsoft.com/en-us/dotnet/standard/collections/"
         });
     }
 
@@ -175,22 +175,22 @@ public static class DbSeeder
         {
             CreatedAt = now,
             UpdatedAt = now,
-            Name = "Machine Learning Fundamentals",
-            Description = "An introduction to machine learning covering supervised learning, unsupervised learning, model evaluation, and practical applications.",
-            StartDate = new DateOnly(2026, 9, 1),
-            EndDate = new DateOnly(2026, 12, 18),
-            ImageURL = "https://images.unsplash.com/photo-1555255707-c07966088b7b",
+            Name = "Fullstack Developer",
+            Description = "Fullstack development with C#, .NET, Entity Framework, REST APIs, HTML/CSS, TypeScript and React, concluding with a collaborative fullstack project.",
+            StartDate = new DateOnly(2026, 4, 27),
+            EndDate = new DateOnly(2026, 9, 16),
+            ImageURL = "https://images.unsplash.com/photo-1461749280684-dccba630e2f6",
             Modules =
             [
                 new Module
                 {
                     CreatedAt = now,
                     UpdatedAt = now,
-                    Name = "Introduction to Machine Learning",
-                    Description = "Core concepts, terminology, and the machine learning workflow.",
-                    StartDate = new DateOnly(2026, 9, 1),
-                    EndDate = new DateOnly(2026, 9, 25),
-                    ImageURL = "https://images.unsplash.com/photo-1518770660439-4636190af475",
+                    Name = "C# Fundamentals & OOP",
+                    Description = "Introduction to C# and core object-oriented programming, including version control, collections and the Garage exercise.",
+                    StartDate = new DateOnly(2026, 4, 27),
+                    EndDate = new DateOnly(2026, 5, 11),
+                    ImageURL = "https://images.unsplash.com/photo-1555066931-4365d14bab8c",
                     Activities =
                     [
                         new Activity
@@ -198,39 +198,49 @@ public static class DbSeeder
                             CreatedAt = now,
                             UpdatedAt = now,
                             Type = ActivityType.Seminar,
-                            Name = "What Is Machine Learning?",
-                            StartTime = new DateTime(2026, 9, 8, 10, 0, 0),
-                            EndTime = new DateTime(2026, 9, 8, 12, 0, 0),
-                            Description = "Introduction to machine learning terminology, workflows, and real-world use cases."
-                        },
-                        new Activity
-                        {
-                            CreatedAt = now,
-                            UpdatedAt = now,
-                            Type = ActivityType.ELearning,
-                            Name = "Machine Learning Workflow",
-                            StartTime = new DateTime(2026, 9, 10, 9, 0, 0),
-                            EndTime = new DateTime(2026, 9, 17, 23, 59, 0),
-                            Description = "Self-paced lesson covering data collection, preprocessing, training, evaluation, and deployment."
+                            Name = "Getting Started: GitHub & Debugging",
+                            StartTime = new DateTime(2026, 4, 27, 9, 0, 0),
+                            EndTime = new DateTime(2026, 4, 28, 16, 0, 0),
+                            Description = "Course kickoff: setting up the development environment, an introduction to Git/GitHub, and debugging in Visual Studio."
                         },
                         new Activity
                         {
                             CreatedAt = now,
                             UpdatedAt = now,
                             Type = ActivityType.Assignment,
-                            Name = "Build Your First Classifier",
-                            StartTime = new DateTime(2026, 9, 15, 9, 0, 0),
-                            EndTime = new DateTime(2026, 9, 25, 23, 59, 0),
-                            Description = "Build and evaluate a simple classification model using a provided dataset.",
+                            Name = "Personalregister",
+                            StartTime = new DateTime(2026, 4, 28, 13, 0, 0),
+                            EndTime = new DateTime(2026, 4, 29, 9, 0, 0),
+                            Description = "Build a simple console-based personnel register to practice fundamental C# syntax, control flow and input handling.",
                             Assignment = new Assignment
                             {
                                 CreatedAt = now,
                                 UpdatedAt = now,
-                                Title = "First Classification Model",
-                                Description = "Train a simple classifier, evaluate its performance, and explain your results.",
-                                Deadline = new DateTime(2026, 9, 25, 23, 59, 0),
+                                Title = "Personalregister",
+                                Description = "Implement a personnel register application in C# and be ready to walk through your solution.",
+                                Deadline = new DateTime(2026, 4, 29, 9, 0, 0),
                                 Submissions = []
                             }
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "Object-Oriented Programming",
+                            StartTime = new DateTime(2026, 5, 5, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 6, 16, 0, 0),
+                            Description = "Core object-oriented programming concepts in C#: classes, objects, encapsulation and inheritance."
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "Garage (Collections & Arrays)",
+                            StartTime = new DateTime(2026, 5, 7, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 11, 16, 0, 0),
+                            Description = "Build a Garage application storing vehicles in arrays and collections, introducing collection types in C#."
                         }
                     ]
                 },
@@ -238,10 +248,82 @@ public static class DbSeeder
                 {
                     CreatedAt = now,
                     UpdatedAt = now,
-                    Name = "Supervised Learning",
-                    Description = "Regression, classification, model training, and evaluation.",
-                    StartDate = new DateOnly(2026, 9, 28),
-                    EndDate = new DateOnly(2026, 10, 30),
+                    Name = "Advanced C# & Clean Code",
+                    Description = "Progressing from C# fundamentals into reusable, testable and maintainable code with generics, LINQ, unit testing and clean code principles.",
+                    StartDate = new DateOnly(2026, 5, 12),
+                    EndDate = new DateOnly(2026, 5, 27),
+                    ImageURL = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97",
+                    Activities =
+                    [
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Assignment,
+                            Name = "Generics & Garage<T>",
+                            StartTime = new DateTime(2026, 5, 12, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 15, 16, 0, 0),
+                            Description = "Rebuild the Garage exercise using generics and interfaces to create a reusable, type-safe collection.",
+                            Assignment = new Assignment
+                            {
+                                CreatedAt = now,
+                                UpdatedAt = now,
+                                Title = "Garage<T>",
+                                Description = "Refactor the Garage application to use generics, and be ready to explain your design choices.",
+                                Deadline = new DateTime(2026, 5, 15, 16, 0, 0),
+                                Submissions = []
+                            }
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "LINQ",
+                            StartTime = new DateTime(2026, 5, 18, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 18, 16, 0, 0),
+                            Description = "Practical exercises querying and transforming collections using LINQ."
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Assignment,
+                            Name = "Garage 2.0 & Unit Testing",
+                            StartTime = new DateTime(2026, 5, 19, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 20, 16, 0, 0),
+                            Description = "Extend Garage with unit tests, covering exception handling with try/catch/finally and test-driven practices.",
+                            Assignment = new Assignment
+                            {
+                                CreatedAt = now,
+                                UpdatedAt = now,
+                                Title = "Garage 2.0 with Unit Tests",
+                                Description = "Add unit tests to the Garage<T> solution and handle invalid input using exceptions.",
+                                Deadline = new DateTime(2026, 5, 20, 16, 0, 0),
+                                Submissions = []
+                            }
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Seminar,
+                            Name = "SOLID, Clean Code & Async/Await",
+                            StartTime = new DateTime(2026, 5, 26, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 27, 16, 0, 0),
+                            Description = "Principles of clean, maintainable code using SOLID, and an introduction to asynchronous programming with async/await."
+                        }
+                    ]
+                },
+                new Module
+                {
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    Name = "Entity Framework & APIs",
+                    Description = "Connecting application logic to persistent data with Entity Framework and exposing functionality through REST APIs.",
+                    StartDate = new DateOnly(2026, 5, 28),
+                    EndDate = new DateOnly(2026, 6, 26),
+                    ImageURL = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31",
                     Activities =
                     [
                         new Activity
@@ -249,39 +331,30 @@ public static class DbSeeder
                             CreatedAt = now,
                             UpdatedAt = now,
                             Type = ActivityType.Seminar,
-                            Name = "Regression and Classification",
-                            StartTime = new DateTime(2026, 10, 1, 10, 0, 0),
-                            EndTime = new DateTime(2026, 10, 1, 12, 0, 0),
-                            Description = "Explore the differences between regression and classification problems."
+                            Name = "Entity Framework Fundamentals",
+                            StartTime = new DateTime(2026, 5, 28, 9, 0, 0),
+                            EndTime = new DateTime(2026, 5, 29, 16, 0, 0),
+                            Description = "Introduction to Entity Framework Core for data persistence and database access in .NET applications."
                         },
                         new Activity
                         {
                             CreatedAt = now,
                             UpdatedAt = now,
                             Type = ActivityType.Practice,
-                            Name = "Model Evaluation Workshop",
-                            StartTime = new DateTime(2026, 10, 8, 13, 0, 0),
-                            EndTime = new DateTime(2026, 10, 8, 15, 0, 0),
-                            Description = "Hands-on practice with accuracy, precision, recall, F1 score, and cross-validation."
+                            Name = "API & EF Integration",
+                            StartTime = new DateTime(2026, 6, 1, 9, 0, 0),
+                            EndTime = new DateTime(2026, 6, 12, 16, 0, 0),
+                            Description = "Building a web API backed by Entity Framework Core, connecting endpoints to a persistent database."
                         },
                         new Activity
                         {
                             CreatedAt = now,
                             UpdatedAt = now,
-                            Type = ActivityType.Assignment,
-                            Name = "House Price Prediction",
-                            StartTime = new DateTime(2026, 10, 12, 9, 0, 0),
-                            EndTime = new DateTime(2026, 10, 30, 23, 59, 0),
-                            Description = "Build a regression model to predict house prices.",
-                            Assignment = new Assignment
-                            {
-                                CreatedAt = now,
-                                UpdatedAt = now,
-                                Title = "House Price Prediction",
-                                Description = "Train and evaluate a regression model using a house price dataset.",
-                                Deadline = new DateTime(2026, 10, 30, 23, 59, 0),
-                                Submissions = []
-                            }
+                            Type = ActivityType.Practice,
+                            Name = "REST API Development",
+                            StartTime = new DateTime(2026, 6, 15, 9, 0, 0),
+                            EndTime = new DateTime(2026, 6, 26, 16, 0, 0),
+                            Description = "Designing and implementing RESTful API endpoints following REST conventions."
                         }
                     ]
                 },
@@ -289,50 +362,118 @@ public static class DbSeeder
                 {
                     CreatedAt = now,
                     UpdatedAt = now,
-                    Name = "Neural Networks",
-                    Description = "An introduction to neural networks, backpropagation, and deep learning.",
-                    StartDate = new DateOnly(2026, 11, 2),
-                    EndDate = new DateOnly(2026, 12, 18),
+                    Name = "Frontend Fundamentals",
+                    Description = "Transitioning from backend development into browser-based frontend development with HTML, CSS and TypeScript.",
+                    StartDate = new DateOnly(2026, 6, 29),
+                    EndDate = new DateOnly(2026, 7, 8),
+                    ImageURL = "https://images.unsplash.com/photo-1523437113738-bbd3cc89fb19",
                     Activities =
                     [
                         new Activity
                         {
                             CreatedAt = now,
                             UpdatedAt = now,
-                            Type = ActivityType.ELearning,
-                            Name = "Introduction to Neural Networks",
-                            StartTime = new DateTime(2026, 11, 2, 9, 0, 0),
-                            EndTime = new DateTime(2026, 11, 13, 23, 59, 0),
-                            Description = "Learn the fundamentals of neural networks and how they learn from data."
+                            Type = ActivityType.Practice,
+                            Name = "HTML & CSS",
+                            StartTime = new DateTime(2026, 6, 29, 9, 0, 0),
+                            EndTime = new DateTime(2026, 7, 2, 16, 0, 0),
+                            Description = "Building semantic, styled web pages with HTML and CSS, including responsive layout basics."
                         },
                         new Activity
                         {
                             CreatedAt = now,
                             UpdatedAt = now,
                             Type = ActivityType.Practice,
-                            Name = "Build a Neural Network",
-                            StartTime = new DateTime(2026, 11, 16, 13, 0, 0),
-                            EndTime = new DateTime(2026, 11, 16, 15, 0, 0),
-                            Description = "Implement a small neural network and experiment with hyperparameters."
+                            Name = "TypeScript Fundamentals",
+                            StartTime = new DateTime(2026, 7, 3, 9, 0, 0),
+                            EndTime = new DateTime(2026, 7, 8, 16, 0, 0),
+                            Description = "Introduction to TypeScript's type system and how it improves JavaScript development."
+                        }
+                    ]
+                },
+                new Module
+                {
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    Name = "React Development",
+                    Description = "Building component-based frontend applications with React and TypeScript.",
+                    StartDate = new DateOnly(2026, 7, 9),
+                    EndDate = new DateOnly(2026, 8, 21),
+                    ImageURL = "https://images.unsplash.com/photo-1592609931095-54a2168ae893",
+                    Activities =
+                    [
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "React Fundamentals",
+                            StartTime = new DateTime(2026, 7, 9, 9, 0, 0),
+                            EndTime = new DateTime(2026, 7, 17, 16, 0, 0),
+                            Description = "Introduction to React, JSX, and building component-based user interfaces."
                         },
                         new Activity
                         {
                             CreatedAt = now,
                             UpdatedAt = now,
-                            Type = ActivityType.Assignment,
-                            Name = "Image Classification Project",
-                            StartTime = new DateTime(2026, 11, 23, 9, 0, 0),
-                            EndTime = new DateTime(2026, 12, 18, 23, 59, 0),
-                            Description = "Train a neural network to classify images.",
-                            Assignment = new Assignment
-                            {
-                                CreatedAt = now,
-                                UpdatedAt = now,
-                                Title = "Image Classification",
-                                Description = "Create, train, and evaluate a neural network for image classification.",
-                                Deadline = new DateTime(2026, 12, 18, 23, 59, 0),
-                                Submissions = []
-                            }
+                            Type = ActivityType.Practice,
+                            Name = "Components & State",
+                            StartTime = new DateTime(2026, 8, 3, 9, 0, 0),
+                            EndTime = new DateTime(2026, 8, 14, 16, 0, 0),
+                            Description = "Managing component state and props, and structuring reusable React components with TypeScript."
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "React Application Development",
+                            StartTime = new DateTime(2026, 8, 17, 9, 0, 0),
+                            EndTime = new DateTime(2026, 8, 21, 16, 0, 0),
+                            Description = "Building a complete React application that integrates components, state and API calls."
+                        }
+                    ]
+                },
+                new Module
+                {
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    Name = "Fullstack Project",
+                    Description = "Applying accumulated backend and frontend knowledge in a final collaborative fullstack project.",
+                    StartDate = new DateOnly(2026, 8, 24),
+                    EndDate = new DateOnly(2026, 9, 16),
+                    ImageURL = "https://images.unsplash.com/photo-1611224923853-80b023f02d71",
+                    Activities =
+                    [
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Seminar,
+                            Name = "Project Planning & Scrum",
+                            StartTime = new DateTime(2026, 8, 24, 9, 0, 0),
+                            EndTime = new DateTime(2026, 8, 24, 16, 0, 0),
+                            Description = "Sprint planning using Scrum, setting up a GitHub Project board and Trello board for the team."
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "GitHub Projects & Issues",
+                            StartTime = new DateTime(2026, 8, 25, 9, 0, 0),
+                            EndTime = new DateTime(2026, 8, 28, 16, 0, 0),
+                            Description = "Managing tasks and collaboration using GitHub Projects and Issues throughout the sprint."
+                        },
+                        new Activity
+                        {
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            Type = ActivityType.Practice,
+                            Name = "LMS Fullstack Development",
+                            StartTime = new DateTime(2026, 8, 31, 9, 0, 0),
+                            EndTime = new DateTime(2026, 9, 15, 16, 0, 0),
+                            Description = "Collaborative development of the Course Portal (LMS) fullstack application, applying backend and frontend skills from the course."
                         }
                     ]
                 }
