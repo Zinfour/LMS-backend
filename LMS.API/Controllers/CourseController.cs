@@ -134,7 +134,7 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
                     ActivitiesNumber = m.Activities.Count,
                     ResourcesNumber = m.Resources.Count,
                     NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
-                    Order = m.Order,
+                    Order = Tools.calculateOrder(c, m),
                     CurrentStatus = Tools.calculateStatus(m, user)
                 }).ToList()
             })
