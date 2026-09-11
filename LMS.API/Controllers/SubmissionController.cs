@@ -30,14 +30,20 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         var roles = await _userManager.GetRolesAsync(user);
         if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
         {
-            return BadRequest($"Invalid role.");
+            return BadRequest("Invalid role.");
         }
 
         var userId = roles.Contains(Role.Teacher) ? id : user.Id;
 
 
-        var selectedUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if(selectedUser == null)
+        var selectedUser = await _context.Users
+            .Include(u => u.Submissions)
+                .ThenInclude(s => s.Assignment)
+            .Include(u => u.Submissions)
+                .ThenInclude(s => s.Feedbacks)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (selectedUser == null)
         {
             return NotFound($"User with ID {userId} not found.");
         }
