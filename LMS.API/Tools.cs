@@ -53,6 +53,11 @@ namespace LMS.API
                 return Status.overdue;
             }
         }
+
+        public static int calculateOrder(Course c, Module m)
+        {
+            return c.Modules.Where(md => md.StartDate < m.StartDate).ToList().Count;
+        }
     }
 
 }

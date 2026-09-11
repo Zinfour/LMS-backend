@@ -43,6 +43,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
         {
             return BadRequest("Invalid CourseId.");
         }
+        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
 
         return await _context.Module
             .Where(m => m.CourseId == id)
@@ -58,7 +59,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 ActivitiesNumber = m.Activities.Count,
                 ResourcesNumber = m.Resources.Count,
                 NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
-                Order = m.Order,
+                Order = Tools.calculateOrder(course!, m),
                 CurrentStatus = Tools.calculateStatus(m, user)
             }).ToListAsync();
     }
@@ -89,6 +90,8 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
         {
             return BadRequest("Invalid CourseId.");
         }
+
+        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
 
 
         var module = await _context.Module
@@ -186,7 +189,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             Resources = resources,
             CourseId = module.CourseId,
             TotalNumberOfModules = await _context.Module.CountAsync(m => m.CourseId == module.CourseId),
-            Order = module.Order
+            Order = Tools.calculateOrder(course!, module)
         };
 
     }
