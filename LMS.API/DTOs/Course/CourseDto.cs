@@ -15,6 +15,6 @@
         public List<ModuleDto> Modules { get; set; } = [];
         public List<UserDto> Students { get; set; } = [];
 
-        public UserDto Teacher { get; set; } = null!;
+        public UserDto? Teacher { get; set; }
     }
 }

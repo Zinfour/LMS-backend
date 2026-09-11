@@ -47,7 +47,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         {
             return NotFound($"User with ID {userId} not found.");
         }
-                
+
         var submissions = selectedUser.Submissions.Select(s => new SubmissionDto
         {
             Id = s.Id,
@@ -70,7 +70,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
     [HttpPost("api/submissions")]
     [Authorize(Roles = Role.Student)]
-    public async Task<ActionResult<SubmissionDto>> CreateSubmission([FromBody] CreateSubmissionDto submissionDto)
+    public async Task<ActionResult<SubmissionDto>> CreateSubmission([FromBody] CreateSubmissionDto createSubmissionDto)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -78,26 +78,34 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
             return BadRequest("Logged-in User not found.");
         }
 
-        var assignment = await _context.Assignment.FindAsync(submissionDto.AssignmentId);
+        var assignment = await _context.Assignment.FindAsync(createSubmissionDto.AssignmentId);
         if (assignment == null)
         {
-            return NotFound($"Assignment with ID {submissionDto.AssignmentId} not found.");
+            return NotFound($"Assignment with ID {createSubmissionDto.AssignmentId} not found.");
         }
 
         var submission = new Submission
         {
-            Text = submissionDto.Text,
+            Text = createSubmissionDto.Text,
             CreatedAt = DateTime.UtcNow,
             StudentId = user.Id,
-            AssignmentId = submissionDto.AssignmentId,
+            AssignmentId = createSubmissionDto.AssignmentId,
             Overdue = DateTime.UtcNow > assignment.Deadline
         };
 
         _context.Submission.Add(submission);
         await _context.SaveChangesAsync();
-        submissionDto.Id = submission.Id;
-        submissionDto.CreatedAt = submission.CreatedAt;
 
+        var submissionDto = new SubmissionDto
+        {
+            Id = submission.Id,
+            CreatedAt = submission.CreatedAt,
+            Text = submission.Text,
+            Overdue = submission.Overdue,
+            StudentId = submission.StudentId,
+            AssignmentId = submission.AssignmentId,
+            Feedback = [],
+        };
         return CreatedAtAction(nameof(GetSubmissions), new { id = user.Id }, submissionDto);
     }
 
@@ -112,7 +120,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         }
 
         var feedbacks = await _context.Feedback.Where(f => f.SubmissionId == id).ToListAsync();
-        
+
         return Ok(feedbacks.Select(f => new FeedbackDto
         {
             Id = f.Id,
@@ -124,7 +132,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
     [HttpPost("api/submissions/{id}/feedback")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<FeedbackDto>> AddFeedback(int id, [FromBody] CreateFeedbackDto feedbackDto)
+    public async Task<ActionResult<FeedbackDto>> AddFeedback(int id, [FromBody] CreateFeedbackDto createFeedbackDto)
     {
         var submission = await _context.Submission.FindAsync(id);
         if (submission == null)
@@ -141,16 +149,21 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
         var feedback = new Feedback
         {
             CreatedAt = DateTime.UtcNow,
-            Text = feedbackDto.Text,
+            Text = createFeedbackDto.Text,
             TeacherId = user.Id,
             SubmissionId = id
         };
 
         _context.Feedback.Add(feedback);
         await _context.SaveChangesAsync();
-        feedbackDto.Id = feedback.Id;
-        feedbackDto.CreatedAt = feedback.CreatedAt;
-        feedbackDto.TeacherId = feedback.TeacherId;
+
+        var feedbackDto = new FeedbackDto
+        {
+            Id = feedback.Id,
+            CreatedAt = feedback.CreatedAt,
+            Text = feedback.Text,
+            TeacherId = feedback.TeacherId,
+        };
 
         return CreatedAtAction(nameof(GetFeedback), new { id = submission.Id }, feedbackDto);
     }
