@@ -218,14 +218,45 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
         return NoContent();
     }
 
+	  [HttpPatch("{id}/profileImage")]
+		public async Task<ActionResult> UpdateProfileImage(string id, [FromBody] string? imageUrl)
+		{
+			var user = await _userManager.FindByIdAsync(id);
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
+			{
+					return Forbid();
+			}
+
+			user.UpdatedAt = DateTime.UtcNow;
+			user.ImageUrl = imageUrl;
+
+			var updateResult = await _userManager.UpdateAsync(user);
+			if (!updateResult.Succeeded)
+			{
+				return BadRequest(updateResult.Errors.Select(e => e.Description));
+			}
+
+			return NoContent();
+		}
+
     [HttpDelete("{id}")]
-    [Authorize(Roles = Role.Teacher)]
+    // [Authorize(Roles = Role.Teacher)]
     public async Task<ActionResult> DeleteUser(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
         if (user == null)
         {
             return NotFound();
+        }
+				
+				if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
+        {
+            return Forbid();
         }
 
         var result = await _userManager.DeleteAsync(user);
