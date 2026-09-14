@@ -203,15 +203,12 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
     public async Task<ActionResult> CreateModule(int courseId, ModuleForCreatingDto newModuleInput)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
         if (userId == null)
         {
             return Unauthorized();
         }
-
         var isTeacher = User.IsInRole(Role.Teacher);
         var isStudent = User.IsInRole(Role.Student);
-
         if (!isTeacher)
         {
             return Unauthorized();
@@ -264,9 +261,48 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
 
     [HttpPut("{moduleId}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> updateModule(int id, int moduleId)
+    public async Task<ActionResult> updateModule(int courseId, int moduleId, ModuleFullDto moduleToUpdate)
     {
-        return BadRequest();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+        var isTeacher = User.IsInRole(Role.Teacher);
+        var isStudent = User.IsInRole(Role.Student);
+        if (!isTeacher)
+        {
+            return Unauthorized();
+        }
+        else if (!isStudent)
+        {
+            return BadRequest("Invalid role.");
+        }
+
+        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == courseId);
+        if(course == null)
+        {
+            return NotFound();
+        }
+        var module = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleToUpdate.Id);
+        if(module == null)
+        {
+            return NotFound();
+        }
+
+        module.Id = moduleToUpdate.Id;
+        module.CreatedAt = moduleToUpdate.CreatedAt;
+        module.UpdatedAt = DateTime.UtcNow;
+        module.Name = moduleToUpdate.Name;
+        module.Description = moduleToUpdate.Description;
+        module.StartDate = moduleToUpdate.StartDate;
+        module.EndDate = moduleToUpdate.EndDate;
+        module.ImageURL = moduleToUpdate.ImageURL;
+        module.CourseId = moduleToUpdate.CourseId;
+        
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpDelete("{moduleId}")]
