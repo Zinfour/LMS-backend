@@ -16,5 +16,7 @@ namespace LMS.API.Models
         public Assignment? Assignment { get; set; }
         public int ModuleId { get; set; }
         public Module Module { get; set; } = null!;
+
+        public List<ApplicationUser> CompletedUsers { get; set; } = [];
     }
 }

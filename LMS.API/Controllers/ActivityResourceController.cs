@@ -1,5 +1,5 @@
 ﻿using LMS.API.Data;
-using LMS.API.DTOs.Resuorce;
+using LMS.API.DTOs.Resource;
 using LMS.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;

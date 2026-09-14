@@ -1,6 +1,6 @@
-﻿namespace LMS.API.DTOs.Resuorce
+﻿namespace LMS.API.DTOs.Resource
 {
-    public class UpdateResourceDto
+    public class ResourceDto
     {
         public int Id { get; set; }
         public DateTime CreatedAt { get; set; }

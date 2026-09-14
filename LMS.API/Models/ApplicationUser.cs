@@ -16,5 +16,7 @@ namespace LMS.API.Models
         public Course Course { get; set; } = null!;
 
         public ICollection<ApplicationRole> Roles { get; set; } = [];
+
+        public List<Activity> CompletedActivities { get; set; } = [];
     }
 }

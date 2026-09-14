@@ -62,7 +62,7 @@ namespace LMS.API.Controllers
                 signingCredentials: creds
             );
 
-						var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(token);
+            var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(token);
 
             var resultModel = new ResultModel
             {

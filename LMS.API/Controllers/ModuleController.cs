@@ -3,6 +3,8 @@ using LMS.API.DTOs;
 using LMS.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
+
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +45,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
         {
             return BadRequest("Invalid CourseId.");
         }
+        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
 
         return await _context.Module
             .Where(m => m.CourseId == id)
@@ -54,7 +57,12 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 StartDate = m.StartDate,
                 EndDate = m.EndDate,
                 ImageURL = m.ImageURL,
-                CourseId = m.CourseId
+                CourseId = m.CourseId,
+                ActivitiesNumber = m.Activities.Count,
+                ResourcesNumber = m.Resources.Count,
+                NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
+                Order = _context.Module.Count(md => md.CourseId == m.CourseId && md.StartDate < m.StartDate),
+                CurrentStatus = Tools.calculateStatus(m, user)
             }).ToListAsync();
     }
 
@@ -85,8 +93,20 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             return BadRequest("Invalid CourseId.");
         }
 
+        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
 
-        var module = await _context.Module.Where(m => m.CourseId == id && m.Id == moduleId).FirstOrDefaultAsync();
+
+        var module = await _context.Module
+          .Include(m => m.Activities)
+              .ThenInclude(a => a.Assignment)
+                  .ThenInclude(asg => asg!.Submissions)
+          .Include(m => m.Activities)
+              .ThenInclude(a => a.Resources)
+          .Include(m => m.Activities)
+              .ThenInclude(a => a.CompletedUsers)
+          .Include(m => m.Resources)
+          .Where(m => m.CourseId == id && m.Id == moduleId)
+          .FirstOrDefaultAsync();
 
         if(module == null)
         {
@@ -138,7 +158,8 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                     ImageURL = a.ImageURL,
                     ModuleId = a.ModuleId,
                     Assignment = assignment,
-                    Resources = resources
+                    Resources = resources,
+                    Completed = a.CompletedUsers.Any(u => u.Id == user.Id)
                 };
             }).ToList();
 
@@ -151,7 +172,9 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 UpdatedByUserId = r.UpdatedByUserId,
                 URL = r.URL,
                 ResourceType = r.ResourceType.ToString(),
-                ModuleId = r.ModuleId
+                ModuleId = r.ModuleId,
+                Name = r.Name,
+                Description = r.Description,
             }).ToList();
 
         return new ModuleFullDto
@@ -166,7 +189,9 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
             ImageURL = module.ImageURL,
             Activities = activities,
             Resources = resources,
-            CourseId = module.CourseId
+            CourseId = module.CourseId,
+            TotalNumberOfModules = await _context.Module.CountAsync(m => m.CourseId == module.CourseId),
+            Order = await _context.Module.CountAsync(m => m.CourseId == module.CourseId && m.StartDate < module.StartDate)
         };
 
     }
@@ -187,8 +212,41 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
 
     [HttpDelete("{moduleId}")]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> deleteModule(int id, int moduleId)
+    public async Task<ActionResult> DeleteModule(int courseId, int moduleId)
     {
-        return BadRequest();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
+        var isTeacher = User.IsInRole(Role.Teacher);
+        var isStudent = User.IsInRole(Role.Student);
+
+        if (!isTeacher)
+        {
+            return Unauthorized();
+        }
+        else if (!isStudent)
+        {
+            return BadRequest("Invalid role.");
+        }
+
+        if(!_context.Course.Any(c => c.Id == courseId))
+        {
+            return NotFound($"Couldn't find course with id: {courseId}");
+        }
+
+        var moduleToDelete = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleId && m.CourseId == courseId);
+
+        if(moduleToDelete == null)
+        {
+            return NotFound($"Couldn't find module with id: {moduleId}");
+        }
+
+        _context.Module.Remove(moduleToDelete);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }

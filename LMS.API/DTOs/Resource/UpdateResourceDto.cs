@@ -1,8 +1,6 @@
-﻿using LMS.API.Models.Resources;
-
-namespace LMS.API.DTOs.Resuorce
+﻿namespace LMS.API.DTOs.Resource
 {
-    public class ResourceDto
+    public class UpdateResourceDto
     {
         public int Id { get; set; }
         public DateTime CreatedAt { get; set; }

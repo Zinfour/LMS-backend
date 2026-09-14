@@ -6,5 +6,4 @@ public class FeedbackDto
     public DateTime CreatedAt { get; set; }
     public string Text { get; set; } = null!;
     public string TeacherId { get; set; } = null!;
-    public UserDto Teacher { get; set; } = null!;
 }
