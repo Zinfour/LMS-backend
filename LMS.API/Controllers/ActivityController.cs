@@ -197,9 +197,38 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
 
     [HttpDelete]
     [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> DeleteActivity()
+    [Route("activityId")]
+    public async Task<ActionResult> DeleteActivity(int activityId)
     {
-        return BadRequest();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
+        var isTeacher = User.IsInRole(Role.Teacher);
+        var isStudent = User.IsInRole(Role.Student);
+
+        if (!isTeacher)
+        {
+            return Unauthorized();
+        }
+        else if (!isStudent)
+        {
+            return BadRequest("Invalid role.");
+        }
+        var activityToDelete = await _context.Activity.FirstOrDefaultAsync(a => a.Id == activityId);
+
+        if(activityToDelete == null)
+        {
+            return NotFound($"Couldn't find activity with id: {activityId}");
+        }
+
+        _context.Activity.Remove(activityToDelete);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpPost("{activityId}/complete/{userId}")]
