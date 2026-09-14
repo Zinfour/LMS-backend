@@ -300,6 +300,7 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
         module.ImageURL = moduleToUpdate.ImageURL;
         module.CourseId = moduleToUpdate.CourseId;
         
+        _context.Module.Update(module);
         await _context.SaveChangesAsync();
 
         return NoContent();
