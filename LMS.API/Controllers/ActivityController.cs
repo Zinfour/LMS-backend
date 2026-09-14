@@ -87,7 +87,9 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                         UpdatedByUserId = r.UpdatedByUserId,
                         URL = r.URL,
                         ResourceType = r.ResourceType.ToString(),
-                        ActivityId = r.ActivityId
+                        ActivityId = r.ActivityId,
+                        Name = r.Name,
+                        Description = r.Description
                     })
                     .ToList()
             })
@@ -167,7 +169,9 @@ public class ActivityController(LmsContext lmsContext, UserManager<ApplicationUs
                         UpdatedByUserId = r.UpdatedByUserId,
                         URL = r.URL,
                         ResourceType = r.ResourceType.ToString(),
-                        ActivityId = r.ActivityId
+                        ActivityId = r.ActivityId,
+                        Name = r.Name,
+                        Description = r.Description,
                     })
                     .ToList()
             })

@@ -41,4 +41,6 @@ public class ActivityResourceDto
     public string? URL { get; set; }
     public string? ResourceType { get; set; }
     public int ActivityId { get; set; }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
 }

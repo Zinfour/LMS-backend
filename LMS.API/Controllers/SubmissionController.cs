@@ -19,7 +19,7 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
 
     [HttpGet("api/users/{id}/submissions")]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<SubmissionDto>>> GetSubmissions(string id)
+    public async Task<ActionResult<IEnumerable<SubmissionDto>>> GetSubmissions(string id, int? assignmentId)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -48,22 +48,24 @@ public class SubmissionController(LmsContext lmsContext, UserManager<Application
             return NotFound($"User with ID {userId} not found.");
         }
 
-        var submissions = selectedUser.Submissions.Select(s => new SubmissionDto
-        {
-            Id = s.Id,
-            CreatedAt = s.CreatedAt,
-            Text = s.Text,
-            StudentId = s.StudentId,
-            AssignmentId = s.AssignmentId,
-            Overdue = s.Assignment != null && s.CreatedAt > s.Assignment.Deadline,
-            Feedback = s.Feedbacks.Select(f => new FeedbackDto
+        var submissions = selectedUser.Submissions
+            .Where(s => assignmentId == null || s.AssignmentId == assignmentId)
+            .Select(s => new SubmissionDto
             {
-                Id = f.Id,
-                CreatedAt = f.CreatedAt,
-                Text = f.Text,
-                TeacherId = f.TeacherId
-            }).ToList()
-        }).ToList();
+                Id = s.Id,
+                CreatedAt = s.CreatedAt,
+                Text = s.Text,
+                StudentId = s.StudentId,
+                AssignmentId = s.AssignmentId,
+                Overdue = s.Assignment != null && s.CreatedAt > s.Assignment.Deadline,
+                Feedback = s.Feedbacks.Select(f => new FeedbackDto
+                {
+                    Id = f.Id,
+                    CreatedAt = f.CreatedAt,
+                    Text = f.Text,
+                    TeacherId = f.TeacherId
+                }).ToList()
+            }).ToList();
 
         return Ok(submissions);
     }
