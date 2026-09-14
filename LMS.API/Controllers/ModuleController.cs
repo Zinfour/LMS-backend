@@ -143,7 +143,9 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                     UpdatedByUserId = r.UpdatedByUserId,
                     URL = r.URL,
                     ResourceType = r.ResourceType.ToString(),
-                    ActivityId = r.ActivityId
+                    ActivityId = r.ActivityId,
+                    Name = r.Name,
+                    Description = r.Description,
                 }).ToList();
                 return new ActivityDto
                 {
