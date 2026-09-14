@@ -1,3 +1,5 @@
+using LMS.API.DTOs.Resource;
+
 namespace LMS.API.DTOs;
 
 public class ModuleFullDto
@@ -12,7 +14,7 @@ public class ModuleFullDto
     public DateOnly EndDate { get; set; }
     public string? ImageURL { get; set; }
     public List<ActivityDto> Activities { get; set; } = [];
-    public List<ModuleResourceDto> Resources { get; set; } = [];
+    public List<ResourceDto> Resources { get; set; } = [];
     
     public int CourseId { get; set; }
     public int TotalNumberOfModules { get; set; }

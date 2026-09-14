@@ -1,55 +1,65 @@
+using LMS.API.Core.Types;
+using LMS.API.Core.Workflows;
 using LMS.API.Data;
 using LMS.API.DTOs;
 using LMS.API.Models;
+using LMS.API.Shell;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
-
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SQLitePCL;
 
-namespace LMS.API.Controllers;
-
-[ApiController]
-[Route("/api/courses/{courseId}/modules")]
-public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
+namespace LMS.API.Controllers
 {
-    private readonly LmsContext _context = lmsContext;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
-
-
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules(int courseId)
+    [ApiController]
+    [Route("/api/courses/{courseId}/modules")]
+    public class ModuleController(
+        LmsContext lmsContext,
+        UserManager<ApplicationUser> userManager) : ControllerBase
     {
-        var user = await _userManager.GetUserAsync(User);
+        private readonly LmsContext _context = lmsContext;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-        if (user == null)
+        // ---------- GET /api/courses/{courseId}/modules ----------
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules(int courseId)
         {
-            return BadRequest("User not found.");
-        }
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return BadRequest("User not found.");
+            var roles = await _userManager.GetRolesAsync(user);
+            var caller = new CallerContext(user.Id,
+                roles.Contains(Role.Teacher), roles.Contains(Role.Student), user.CourseId);
 
-        var roles = await _userManager.GetRolesAsync(user);
+            var courseExists = await _context.Course.AnyAsync(c => c.Id == courseId);
 
-        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
-        {
-            return BadRequest($"Invalid role.");
-        }
+            // Core: pure resolution of which course to read.
+            var resolved = ModuleWorkflow.ResolveCourse(caller, courseId, courseExists);
+            if (resolved is not WorkflowResult<int>.Ok ok)
+                return this.ToActionResult(resolved);
 
-        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
-        
-        
-        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
-        if (!courseExists)
-        {
-            return BadRequest("Invalid CourseId.");
-        }
-        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        return await _context.Module
-            .Where(m => m.CourseId == id)
-            .Select(m => new ModuleDto
+            // Shell: load the raw numbers, then let the pure workflow decide status.
+            var raw = await _context.Module
+                .Where(m => m.CourseId == ok.Value)
+                .Select(m => new
+                {
+                    m.Id,
+                    m.Name,
+                    m.Description,
+                    m.StartDate,
+                    m.EndDate,
+                    m.ImageURL,
+                    m.CourseId,
+                    ActivitiesNumber = m.Activities.Count,
+                    ResourcesNumber = m.Resources.Count,
+                    NumberOfCompletedActivities =
+                        m.Activities.Count(a => a.CompletedUsers.Any(u => u.Id == user.Id)),
+                })
+                .ToListAsync();
+
+            var result = raw.Select(m => new ModuleDto
             {
                 Id = m.Id,
                 Name = m.Name,
@@ -58,195 +68,96 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
                 EndDate = m.EndDate,
                 ImageURL = m.ImageURL,
                 CourseId = m.CourseId,
-                ActivitiesNumber = m.Activities.Count,
-                ResourcesNumber = m.Resources.Count,
-                NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
                 Order = _context.Module.Count(md => md.CourseId == m.CourseId && md.StartDate < m.StartDate),
-                CurrentStatus = Tools.calculateStatus(m, user)
-            }).ToListAsync();
-    }
-
-
-    [HttpGet("{moduleId}")]
-    public async Task<ActionResult<ModuleFullDto>> GetModule(int courseId, int moduleId)
-    {
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return BadRequest("User not found.");
-        }
-
-        var roles = await _userManager.GetRolesAsync(user);
-
-        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
-        {
-            return BadRequest($"Invalid role.");
-        }
-
-        var id = roles.Contains(Role.Teacher) ? courseId : user.CourseId;
-        
-        
-        var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
-        if (!courseExists)
-        {
-            return BadRequest("Invalid CourseId.");
-        }
-
-        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == id);
-
-
-        var module = await _context.Module
-          .Include(m => m.Activities)
-              .ThenInclude(a => a.Assignment)
-                  .ThenInclude(asg => asg!.Submissions)
-          .Include(m => m.Activities)
-              .ThenInclude(a => a.Resources)
-          .Include(m => m.Activities)
-              .ThenInclude(a => a.CompletedUsers)
-          .Include(m => m.Resources)
-          .Where(m => m.CourseId == id && m.Id == moduleId)
-          .FirstOrDefaultAsync();
-
-        if(module == null)
-        {
-            return BadRequest("Invalid ModuleId");
-        }
-
-        var activities = module.Activities.Select(a =>
-            {
-                var tempAssignment = a.Assignment;
-                var assignment = tempAssignment == null ? null : new AssignmentDto
-                {
-                    Id = tempAssignment.Id,
-                    CreatedAt = tempAssignment.CreatedAt,
-                    UpdatedAt = tempAssignment.UpdatedAt,
-                    Title = tempAssignment.Title,
-                    Description = tempAssignment.Description,
-                    Deadline = tempAssignment.Deadline,
-                    ActivityId = tempAssignment.ActivityId,
-                    Submissions = tempAssignment.Submissions.Select(s => new SubmissionDto
-                    {
-                        Id = s.Id,
-                        CreatedAt = s.CreatedAt,
-                        Text = s.Text,
-                        StudentId = s.StudentId,
-                        AssignmentId = s.AssignmentId
-                    }).ToList()
-                };
-                var resources = a.Resources.Select(r => new ActivityResourceDto
-                {
-                    Id = r.Id,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt,
-                    CreatedByUserId = r.CreatedByUserId,
-                    UpdatedByUserId = r.UpdatedByUserId,
-                    URL = r.URL,
-                    ResourceType = r.ResourceType.ToString(),
-                    ActivityId = r.ActivityId
-                }).ToList();
-                return new ActivityDto
-                {
-                    Id = a.Id,
-                    CreatedAt = a.CreatedAt,
-                    UpdatedAt = a.UpdatedAt,
-                    Type = a.Type.ToString(),
-                    Name = a.Name,
-                    StartTime = a.StartTime,
-                    EndTime = a.EndTime,
-                    Description = a.Description,
-                    ImageURL = a.ImageURL,
-                    ModuleId = a.ModuleId,
-                    Assignment = assignment,
-                    Resources = resources,
-                    Completed = a.CompletedUsers.Any(u => u.Id == user.Id)
-                };
+                ActivitiesNumber = m.ActivitiesNumber,
+                ResourcesNumber = m.ResourcesNumber,
+                NumberOfCompletedActivities = m.NumberOfCompletedActivities,
+                CurrentStatus = ModuleStatusWorkflow.Calculate(
+                    m.StartDate, m.EndDate, m.ActivitiesNumber, m.NumberOfCompletedActivities, today)
             }).ToList();
 
-        var resources = module.Resources.Select(r => new ModuleResourceDto
+            return Ok(result);
+        }
+
+        // ---------- GET /api/courses/{courseId}/modules/{moduleId} ----------
+        [HttpGet("{moduleId}")]
+        [Authorize]
+        public async Task<ActionResult<ModuleFullDto>> GetModule(int courseId, int moduleId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return BadRequest("User not found.");
+            var roles = await _userManager.GetRolesAsync(user);
+            var caller = new CallerContext(user.Id,
+                roles.Contains(Role.Teacher), roles.Contains(Role.Student), user.CourseId);
+
+            var courseExists = await _context.Course.AnyAsync(c => c.Id == courseId);
+
+            var resolved = ModuleWorkflow.ResolveCourse(caller, courseId, courseExists);
+            if (resolved is not WorkflowResult<int>.Ok ok)
+                return this.ToActionResult(resolved);
+
+            // Shell: load aggregate with everything we need for a pure projection.
+            var module = await _context.Module
+                .Include(m => m.Activities).ThenInclude(a => a.Assignment).ThenInclude(a => a!.Submissions)
+                .Include(m => m.Activities).ThenInclude(a => a.Resources)
+                .Include(m => m.Resources)
+                .Include(m => m.Course).ThenInclude(c => c.Modules)
+                .FirstOrDefaultAsync(m => m.CourseId == ok.Value && m.Id == moduleId);
+
+            // Core: pure access decision on the specific module.
+            var access = ModuleWorkflow.ValidateModuleAccess(new ModuleReadContext(
+                Caller: caller,
+                ResolvedCourseId: ok.Value,
+                CourseExists: true,
+                ModuleExists: module is not null));
+
+            if (access is not WorkflowResult<Unit>.Ok)
+                return this.ToActionResult(access);
+
+            // Shell: pure projection helpers.
+            var dto = new ModuleFullDto
             {
-                Id = r.Id,
-                CreatedAt = r.CreatedAt,
-                UpdatedAt = r.UpdatedAt,
-                CreatedByUserId = r.CreatedByUserId,
-                UpdatedByUserId = r.UpdatedByUserId,
-                URL = r.URL,
-                ResourceType = r.ResourceType.ToString(),
-                ModuleId = r.ModuleId,
-                Name = r.Name,
-                Description = r.Description,
-            }).ToList();
+                Id = module!.Id,
+                CreatedAt = module.CreatedAt,
+                UpdatedAt = module.UpdatedAt,
+                Name = module.Name,
+                Description = module.Description,
+                StartDate = module.StartDate,
+                EndDate = module.EndDate,
+                ImageURL = module.ImageURL,
+                CourseId = module.CourseId,
+                Order = await _context.Module.CountAsync(m => m.CourseId == module.CourseId && m.StartDate < module.StartDate),
+                TotalNumberOfModules = module.Course.Modules.Count,
+                Activities = module.Activities.Select(a => a.ToActivityDto()).ToList(),
+                Resources = module.Resources.Select(r => r.ToResourceDto()).ToList()
+            };
 
-        return new ModuleFullDto
-        {
-            Id = module.Id,
-            CreatedAt = module.CreatedAt,
-            UpdatedAt = module.UpdatedAt,
-            Name = module.Name,
-            Description = module.Description,
-            StartDate = module.StartDate,
-            EndDate = module.EndDate,
-            ImageURL = module.ImageURL,
-            Activities = activities,
-            Resources = resources,
-            CourseId = module.CourseId,
-            TotalNumberOfModules = await _context.Module.CountAsync(m => m.CourseId == module.CourseId),
-            Order = await _context.Module.CountAsync(m => m.CourseId == module.CourseId && m.StartDate < module.StartDate)
-        };
-
-    }
-
-    [HttpPost]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> createModule(int id)
-    {
-        return BadRequest();
-    }
-
-    [HttpPut("{moduleId}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> updateModule(int id, int moduleId)
-    {
-        return BadRequest();
-    }
-
-    [HttpDelete("{moduleId}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> DeleteModule(int courseId, int moduleId)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (userId == null)
-        {
-            return Unauthorized();
+            return Ok(dto);
         }
 
-        var isTeacher = User.IsInRole(Role.Teacher);
-        var isStudent = User.IsInRole(Role.Student);
-
-        if (!isTeacher)
+        // ---------- POST /api/courses/{courseId}/modules ----------
+        [HttpPost]
+        [Authorize(Roles = Role.Teacher)]
+        public ActionResult CreateModule(int courseId)
         {
-            return Unauthorized();
-        }
-        else if (!isStudent)
-        {
-            return BadRequest("Invalid role.");
+            // Placeholder preserved.
+            return BadRequest();
         }
 
-        if(!_context.Course.Any(c => c.Id == courseId))
+        // ---------- PUT /api/courses/{courseId}/modules/{moduleId} ----------
+        [HttpPut("{moduleId}")]
+        [Authorize(Roles = Role.Teacher)]
+        public ActionResult UpdateModule(int courseId, int moduleId)
         {
-            return NotFound($"Couldn't find course with id: {courseId}");
+            return BadRequest();
         }
 
-        var moduleToDelete = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleId && m.CourseId == courseId);
-
-        if(moduleToDelete == null)
+        // ---------- DELETE /api/courses/{courseId}/modules/{moduleId} ----------
+        [HttpDelete("{moduleId}")]
+        [Authorize(Roles = Role.Teacher)]
+        public ActionResult DeleteModule(int courseId, int moduleId)
         {
-            return NotFound($"Couldn't find module with id: {moduleId}");
+            return BadRequest();
         }
-
-        _context.Module.Remove(moduleToDelete);
-        await _context.SaveChangesAsync();
-        return NoContent();
     }
 }

@@ -1,3 +1,5 @@
+using LMS.API.Core.Types;
+
 namespace LMS.API.DTOs;
 public class ModuleDto
 {
@@ -13,13 +15,5 @@ public class ModuleDto
     public int NumberOfCompletedActivities { get; set; }
     public int Order {get; set;}
 
-    public Status CurrentStatus {get; set;}
-
-    public enum Status
-    {
-        completed,
-        overdue,
-        inProgress,
-        locked
-    }
+    public ModuleStatus CurrentStatus {get; set;}
 }

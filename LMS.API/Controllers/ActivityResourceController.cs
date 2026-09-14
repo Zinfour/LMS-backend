@@ -1,175 +1,129 @@
-﻿using LMS.API.Data;
+﻿using LMS.API.Core.Types;
+using LMS.API.Core.Workflows;
+using LMS.API.Data;
 using LMS.API.DTOs.Resource;
 using LMS.API.Models;
+using LMS.API.Shell;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace LMS.API.Controllers;
-
-[ApiController]
-public class ActivityResourceController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
+namespace LMS.API.Controllers
 {
-    private readonly LmsContext _context = lmsContext;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
-
-    [HttpGet("api/activities/{id}/resources")]
-    [Authorize(Roles = Role.Teacher + "," + Role.Student)]
-    public async Task<ActionResult<IEnumerable<ResourceDto>>> GetActivityResources(int id)
+    [ApiController]
+    public class ActivityResourceController(
+        LmsContext lmsContext,
+        UserManager<ApplicationUser> userManager) : ControllerBase
     {
-        var activity = await _context.Activity.FindAsync(id);
-        if (activity == null)
+        private readonly LmsContext _context = lmsContext;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
+
+        [HttpGet("api/activities/{id}/resources")]
+        [Authorize(Roles = Role.Teacher + "," + Role.Student)]
+        public async Task<ActionResult<IEnumerable<ResourceDto>>> GetActivityResources(int id)
         {
-            return NotFound($"Activity with ID {id} not found.");
+            if (!await _context.Activity.AnyAsync(a => a.Id == id))
+                return NotFound($"Activity with ID {id} not found.");
+
+            var dtos = await _context.ActivityResource
+                .Where(r => r.ActivityId == id)
+                .Select(r => r.ToResourceView())    // pure projection helper
+                .ToListAsync();
+
+            return Ok(dtos.Select(v => v.ToDto()));
         }
 
-        var resources = await _context.ActivityResource.Where(r => r.ActivityId == id).ToListAsync();
-        var resourceDtos = resources.Select(r => new ResourceDto
+        [HttpGet("api/activities/resources/{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<ResourceDto>> GetActivityResource(int id)
         {
-            Id = r.Id,
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            CreatedByUserId = r.CreatedByUserId,
-            UpdatedByUserId = r.UpdatedByUserId,
-            URL = r.URL,
-            ResourceType = Tools.ResourceTypeToString(r.ResourceType),
-            Name = r.Name,
-            Description = r.Description,
-        });
+            var view = await _context.ActivityResource
+                .Where(r => r.Id == id)
+                .Select(r => r.ToResourceView())
+                .FirstOrDefaultAsync();
 
-        return Ok(resourceDtos);
-    }
-
-    [HttpGet("api/activities/resources/{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> GetActivityResource(int id)
-    {
-        var resource = await _context.ActivityResource.FindAsync(id);
-        if (resource == null)
-        {
-            return NotFound($"Resource with ID {id} not found.");
+            return view is null
+                ? NotFound($"Resource with ID {id} not found.")
+                : Ok(view.ToDto());
         }
 
-        var resourceDto = new ResourceDto
+        [HttpPost("api/activities/{id}/resources")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<ResourceDto>> CreateActivityResource(
+            int id, [FromBody] CreateResourceDto dto)
         {
-            Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
-            CreatedByUserId = resource.CreatedByUserId,
-            UpdatedByUserId = resource.UpdatedByUserId,
-            URL = resource.URL,
-            ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
-            Name = resource.Name,
-            Description = resource.Description,
-        };
+            // 1. Shell: resolve caller + existence facts.
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Unauthorized("User not found.");
 
-        return Ok(resourceDto);
-    }
+            if (!await _context.Activity.AnyAsync(a => a.Id == id))
+                return NotFound($"Activity with ID {id} not found.");
 
-    [HttpPost("api/activities/{id}/resources")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> CreateActivityResource(int id, [FromBody] CreateResourceDto createResourceDto)
-    {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-        {
-            return Unauthorized("User not found.");
+            // 2. Core: validate the request purely.
+            var validation = ResourceWorkflow.Validate(new ResourceWrite(
+                dto.URL, dto.ResourceType, dto.Name, dto.Description));
+
+            if (validation is not WorkflowResult<ResourceWrite>.Ok ok)
+                return this.ToActionResult(validation);
+
+            // 3. Shell: persist.
+            var now = DateTime.UtcNow;
+            var resource = new ActivityResource
+            {
+                ActivityId = id,
+                CreatedAt = now,
+                UpdatedAt = now,
+                CreatedByUserId = user.Id,
+                UpdatedByUserId = user.Id,
+                URL = ok.Value.URL,
+                ResourceType = Tools.ParseResourceType(ok.Value.ResourceType),
+                Name = ok.Value.Name,
+                Description = ok.Value.Description
+            };
+            _context.ActivityResource.Add(resource);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetActivityResource),
+                new { id = resource.Id }, resource.ToResourceView().ToDto());
         }
 
-            var activity = await _context.Activity.FindAsync(id);
-        if (activity == null)
+        [HttpPut("api/activities/resources/{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<ResourceDto>> UpdateActivityResource(
+            int id, [FromBody] UpdateResourceDto dto)
         {
-            return NotFound($"Activity with ID {id} not found.");
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Unauthorized("User not found.");
+
+            var resource = await _context.ActivityResource.FindAsync(id);
+            if (resource is null) return NotFound($"Resource with ID {id} not found.");
+
+            var validation = ResourceWorkflow.Validate(new ResourceWrite(
+                dto.URL, dto.ResourceType, dto.Name, dto.Description));
+            if (validation is not WorkflowResult<ResourceWrite>.Ok ok)
+                return this.ToActionResult(validation);
+
+            resource.UpdatedAt = DateTime.UtcNow;
+            resource.UpdatedByUserId = user.Id;
+            resource.URL = ok.Value.URL;
+            resource.ResourceType = Tools.ParseResourceType(ok.Value.ResourceType);
+            resource.Name = ok.Value.Name;
+            resource.Description = ok.Value.Description;
+
+            await _context.SaveChangesAsync();
+            return Ok(resource.ToResourceView().ToDto());
         }
 
-        var resource = new ActivityResource
+        [HttpDelete("api/activities/resources/{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult> DeleteActivityResource(int id)
         {
-            ActivityId = id,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            CreatedByUserId = user.Id,
-            UpdatedByUserId = user.Id,
-            URL = createResourceDto.URL,
-            ResourceType = Tools.ParseResourceType(createResourceDto.ResourceType),
-            Name = createResourceDto.Name,
-            Description = createResourceDto.Description,
-        };
-
-        _context.ActivityResource.Add(resource);
-        await _context.SaveChangesAsync();
-
-        var resourceDto = new ResourceDto
-        {
-            Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
-            CreatedByUserId = resource.CreatedByUserId,
-            UpdatedByUserId = resource.UpdatedByUserId,
-            URL = resource.URL,
-            ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
-            Name = resource.Name,
-            Description = resource.Description,
-        };
-
-        return CreatedAtAction(nameof(GetActivityResource), new { id = resource.Id }, resourceDto);
-    }
-
-    [HttpPut("api/activities/resources/{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> UpdateActivityResource(int id, [FromBody] UpdateResourceDto updateResourceDto)
-    {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-        {
-            return Unauthorized("User not found.");
+            var resource = await _context.ActivityResource.FindAsync(id);
+            if (resource is null) return NotFound($"Resource with ID {id} not found.");
+            _context.ActivityResource.Remove(resource);
+            await _context.SaveChangesAsync();
+            return Ok();
         }
-
-        var resource = await _context.ActivityResource.FindAsync(id);
-        if (resource == null)
-        {
-            return NotFound($"Resource with ID {id} not found.");
-        }
-
-        resource.UpdatedAt = DateTime.UtcNow;
-        resource.UpdatedByUserId = user.Id;
-        resource.URL = updateResourceDto.URL;
-        resource.ResourceType = Tools.ParseResourceType(updateResourceDto.ResourceType);
-        resource.Name = updateResourceDto.Name;
-        resource.Description = updateResourceDto.Description;
-
-        _context.ActivityResource.Update(resource);
-        await _context.SaveChangesAsync();
-
-        var resourceDto = new ResourceDto
-        {
-            Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
-            CreatedByUserId = resource.CreatedByUserId,
-            UpdatedByUserId = resource.UpdatedByUserId,
-            URL = resource.URL,
-            ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
-            Name = resource.Name,
-            Description = resource.Description,
-        };
-
-        return Ok(resourceDto);
-    }
-
-    [HttpDelete("api/activities/resources/{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> DeleteActivityResource(int id)
-    {
-        var resource = await _context.ActivityResource.FindAsync(id);
-        if (resource == null)
-        {
-            return NotFound($"Resource with ID {id} not found.");
-        }
-
-        _context.ActivityResource.Remove(resource);
-        await _context.SaveChangesAsync();
-
-        return Ok();
     }
 }

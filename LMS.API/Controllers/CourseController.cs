@@ -1,240 +1,146 @@
-﻿using LMS.API.Data;
+﻿using LMS.API.Core.Types;
+using LMS.API.Core.Workflows;
+using LMS.API.Data;
 using LMS.API.DTOs;
 using LMS.API.DTOs.Course;
 using LMS.API.Models;
+using LMS.API.Shell;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace LMS.API.Controllers;
-
-[ApiController]
-[Route("api/courses")]
-public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
+namespace LMS.API.Controllers
 {
-    private readonly LmsContext _context = lmsContext;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
-
-    [HttpGet]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<IEnumerable<CourseDto>>> GetCourses()
+    [ApiController]
+    [Route("api/courses")]
+    public class CourseController(
+        LmsContext lmsContext,
+        UserManager<ApplicationUser> userManager) : ControllerBase
     {
-        return await _context.Course
-            .Select(c => new CourseDto
+        private readonly LmsContext _context = lmsContext;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
+
+        [HttpGet]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<IEnumerable<CourseDto>>> GetCourses()
+        {
+            var courseDtos = await _context.Course.Select(c => c.ToCourseDto()).ToListAsync();
+
+            foreach (var dto in courseDtos)
             {
-                Id = c.Id,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt,
-                Name = c.Name,
-                Description = c.Description,
-                StartDate = c.StartDate,
-                EndDate = c.EndDate,
-                ImageURL = c.ImageURL,
-                Resources = c.Resources.Select(r => new CourseResourceDto
-                {
-                    Id = r.Id,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt,
-                    CreatedByUserId = r.CreatedByUserId,
-                    UpdatedByUserId = r.UpdatedByUserId,
-                    URL = r.URL,
-                    ResourceType = r.ResourceType
-                }).ToList(),
-                Students = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student)).Select(u => new UserDto{
-                    Id = u.Id,
-                    Email = u.Email ?? string.Empty,
-                    FirstName = u.FirstName ?? string.Empty,
-                    LastName = u.LastName ?? string.Empty,
-                    ImageUrl = u.ImageUrl,
-                }).ToList(),
-                Teacher = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Teacher)).Select(u => new UserDto{
-                    Id = u.Id,
-                    Email = u.Email ?? string.Empty,
-                    FirstName = u.FirstName ?? string.Empty,
-                    LastName = u.LastName ?? string.Empty,
-                    ImageUrl = u.ImageUrl,
-                }).FirstOrDefault() ?? new UserDto(),
-            }).ToListAsync();
-    }
+                await AttachValues(dto);
+            }
 
-    [HttpGet("{id}")]
-    [Authorize]
-    public async Task<ActionResult<CourseDto>> GetCourse(int id)
-    {
-
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return BadRequest("User not found.");
+            return Ok(courseDtos);
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
-
-        if (!roles.Contains(Role.Teacher) && !roles.Contains(Role.Student))
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<ActionResult<CourseDto>> GetCourse(int id)
         {
-            return BadRequest($"Invalid role.");
-        }
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return BadRequest("User not found.");
+            var roles = await _userManager.GetRolesAsync(user);
+            var caller = new CallerContext(user.Id,
+                roles.Contains(Role.Teacher), roles.Contains(Role.Student), user.CourseId);
 
-        var courseId = roles.Contains(Role.Teacher) ? id : user.CourseId;
+            var resolved = CourseAccess.ResolveCourseId(caller, id);
+            if (resolved is null) return BadRequest("Invalid role.");
 
-        var course = await _context.Course
-            .Include(c => c.Resources)
-            .Include(c => c.Users)
-            .Include(c => c.Modules)
-              .ThenInclude(m => m.Activities)
-                .ThenInclude(a => a.CompletedUsers)
-            .Where(c => c.Id == courseId)
-            .Select(c => new CourseDto
+            var dto = await _context.Course
+                .Where(c => c.Id == resolved)
+                .Select(c => c.ToCourseDto())
+                .FirstOrDefaultAsync();
+
+            if (dto is null)
             {
-                Id = c.Id,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt,
-                Name = c.Name,
-                Description = c.Description,
-                StartDate = c.StartDate,
-                EndDate = c.EndDate,
-                ImageURL = c.ImageURL,
-                Resources = c.Resources.Select(r => new CourseResourceDto
-                {
-                    Id = r.Id,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt,
-                    CreatedByUserId = r.CreatedByUserId,
-                    UpdatedByUserId = r.UpdatedByUserId,
-                    URL = r.URL,
-                    ResourceType = r.ResourceType
-                }).ToList(),
-                Students = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student))
-                  .Select(u => new UserDto{
-                      Id = u.Id,
-                      Email = u.Email ?? string.Empty,
-                      FirstName = u.FirstName ?? string.Empty,
-                      LastName = u.LastName ?? string.Empty,
-                      ImageUrl = u.ImageUrl,
-                  }).ToList(),
-                Teacher = c.Users.Where(user => user.Roles.Any(r => r.Name == Role.Teacher))
-                  .Select(u => new UserDto{
-                      Id = u.Id,
-                      Email = u.Email ?? string.Empty,
-                      FirstName = u.FirstName ?? string.Empty,
-                      LastName = u.LastName ?? string.Empty,
-                      ImageUrl = u.ImageUrl,
-                  }).FirstOrDefault() ?? new UserDto(),
-                Modules = c.Modules.Select(m => new ModuleDto
-                {
-                    Id = m.Id,
-                    Name = m.Name,
-                    Description = m.Description,
-                    StartDate = m.StartDate,
-                    EndDate = m.EndDate,
-                    ImageURL = m.ImageURL,
-                    CourseId = m.CourseId,
-                    ActivitiesNumber = m.Activities.Count,
-                    ResourcesNumber = m.Resources.Count,
-                    NumberOfCompletedActivities = m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == user.Id)).ToList().Count,
-                    Order = _context.Module.Count(md => md.CourseId == m.CourseId && md.StartDate < m.StartDate),
-                    CurrentStatus = Tools.calculateStatus(m, user)
-                }).ToList()
-            })
-            .FirstOrDefaultAsync();
+                return NotFound("Course not found.");
+            }
 
-        if (course == null)
-        {
-            return NotFound();
+            await AttachValues(dto);
+
+            return Ok(dto);
         }
 
-        return Ok(course);
-    }
-
-    [HttpPost]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> CreateCourse(CreateCourseDto createCourseDto)
-    {
-        var course = new Course
+        private async Task AttachValues(CourseDto dto)
         {
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            Name = createCourseDto.Name,
-            Description = createCourseDto.Description,
-            StartDate = createCourseDto.StartDate,
-            EndDate = createCourseDto.EndDate,
-            ImageURL = createCourseDto.ImageURL,
-        };
-
-        _context.Course.Add(course);
-
-        await _context.SaveChangesAsync();
-
-        var courseDto = new CourseDto
-        {
-            Id = course.Id,
-            CreatedAt = course.CreatedAt,
-            UpdatedAt = course.UpdatedAt,
-            Name = course.Name,
-            Description = course.Description,
-            StartDate = course.StartDate,
-            EndDate = course.EndDate,
-            ImageURL = course.ImageURL,
-            Resources = [],
-            Modules = [],
-            Students = [],
-            Teacher = null,
-        };
-
-        return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, courseDto);
-    }
-
-    [HttpPut("{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> UpdateCourse(int id, UpdateCourseDto dto)
-    {
-        var course = await _context.Course.FindAsync(id);
-
-        if (course == null)
-        {
-            return NotFound("Course not found.");
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return;
+            var roles = await _userManager.GetRolesAsync(user);
+            var caller = new CallerContext(user.Id,
+                roles.Contains(Role.Teacher), roles.Contains(Role.Student), user.CourseId);
+            
+            dto.Modules = await _context.Module
+                .Where(m => m.CourseId == dto.Id)
+                .Select(m => m.ToModuleDto(
+                    m.Activities.Count(a => a.CompletedUsers.Any(u => u.Id == user.Id)),
+                    ModuleStatusWorkflow.Calculate(
+                        m.StartDate, m.EndDate, m.Activities.Count(),
+                        m.Activities.Count(a => a.CompletedUsers.Any(u => u.Id == user.Id)),
+                        DateOnly.FromDateTime(DateTime.UtcNow)),
+                    _context.Module.Count(md => md.CourseId == m.CourseId && md.StartDate < m.StartDate)))
+                .ToListAsync();
+            
+            dto.Resources = await _context.CourseResource
+                .Where(r => r.CourseId == dto.Id)
+                .Select(r => r.ToResourceDto()).ToListAsync();
+            
+            dto.Students = await _context.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student)).Select(u => u.ToUserDto()).ToListAsync();
+            
+            dto.Teacher = await _context.Users
+                .Where(user => user.Roles.Any(r => r.Name == Role.Teacher))
+                .Select(u => u.ToUserDto())
+                .FirstOrDefaultAsync() ?? new UserDto();
         }
 
-        course.UpdatedAt = DateTime.UtcNow;
-        course.Name = dto.Name;
-        course.Description = dto.Description;
-        course.StartDate = dto.StartDate;
-        course.EndDate = dto.EndDate;
-        course.ImageURL = dto.ImageURL;
-        course.Resources = dto.Resources?.Select(r => new CourseResource
+        [HttpPost]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult> CreateCourse(CreateCourseDto dto)
         {
-            Id = r.Id,
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            CreatedByUserId = r.CreatedByUserId,
-            UpdatedByUserId = r.UpdatedByUserId,
-            URL = r.URL,
-            ResourceType = r.ResourceType
-        }).ToList()
-        ?? new List<CourseResource>();
-
-        _context.Course.Update(course);
-        await _context.SaveChangesAsync();
-
-        return Ok(course);
-    }
-
-    [HttpDelete("{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> DeleteCourse(int id)
-    {
-        var course = await _context.Course.FindAsync(id);
-
-        if (course == null)
-        {
-            return NotFound("Course not found.");
+            var now = DateTime.UtcNow;
+            var course = new Course
+            {
+                CreatedAt = now,
+                UpdatedAt = now,
+                Name = dto.Name,
+                Description = dto.Description,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                ImageURL = dto.ImageURL,
+            };
+            _context.Course.Add(course);
+            await _context.SaveChangesAsync();
+            return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course);
         }
 
-        _context.Course.Remove(course);
-        await _context.SaveChangesAsync();
+        [HttpPut("{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult> UpdateCourse(int id, UpdateCourseDto dto)
+        {
+            var course = await _context.Course.FindAsync(id);
+            if (course is null) return NotFound("Course not found.");
 
-        return NoContent();
+            course.UpdatedAt = DateTime.UtcNow;
+            course.Name = dto.Name;
+            course.Description = dto.Description;
+            course.StartDate = dto.StartDate;
+            course.EndDate = dto.EndDate;
+            course.ImageURL = dto.ImageURL;
+
+            await _context.SaveChangesAsync();
+            return Ok(course);
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult> DeleteCourse(int id)
+        {
+            var course = await _context.Course.FindAsync(id);
+            if (course is null) return NotFound("Course not found.");
+            _context.Course.Remove(course);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
     }
 }
