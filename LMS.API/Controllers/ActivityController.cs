@@ -44,7 +44,7 @@ namespace LMS.API.Controllers
                     (courseId == null || a.Module.CourseId == courseId) &&
                     (moduleId == null || a.ModuleId == moduleId) &&
                     (caller!.IsTeacher || a.Module.Course.Users.Any(u => u.Id == caller.UserId)))
-                .Include(a => a.Assignment).ThenInclude(ass => ass.Submissions)
+                .Include(a => a.Assignment).ThenInclude(ass => ass == null ? null : ass.Submissions)
                 .Include(a => a.Resources);
 
             var activities = await query
@@ -53,7 +53,7 @@ namespace LMS.API.Controllers
 
             return Ok(activities);
         }
-        
+
         // --- Read: GET /api/activities/{activityId} ---
         [HttpGet("{activityId}")]
         [Authorize]
@@ -67,7 +67,7 @@ namespace LMS.API.Controllers
                 .Where(a => a.Id == activityId &&
                             (caller.IsTeacher ||
                              a.Module.Course.Users.Any(u => u.Id == caller.UserId)))
-                .Include(a => a.Assignment).ThenInclude(ass => ass.Submissions)
+                .Include(a => a.Assignment).ThenInclude(ass => ass == null ? null : ass.Submissions)
                 .Include(a => a.Resources)
                 .FirstOrDefaultAsync();
 
@@ -76,6 +76,42 @@ namespace LMS.API.Controllers
             return activityDto is null
                 ? NotFound($"Couldn't find activity with id: {activityId}.")
                 : Ok(activityDto);
+        }
+
+        [HttpDelete]
+        [Authorize(Roles = Role.Teacher)]
+        [Route("activityId")]
+        public async Task<ActionResult> DeleteActivity(int activityId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var isTeacher = User.IsInRole(Role.Teacher);
+            var isStudent = User.IsInRole(Role.Student);
+
+            if (!isTeacher)
+            {
+                return Unauthorized();
+            }
+            else if (!isStudent)
+            {
+                return BadRequest("Invalid role.");
+            }
+            var activityToDelete = await _context.Activity.FirstOrDefaultAsync(a => a.Id == activityId);
+
+            if (activityToDelete == null)
+            {
+                return NotFound($"Couldn't find activity with id: {activityId}");
+            }
+
+            _context.Activity.Remove(activityToDelete);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
         // --- Command: POST /api/activities/{activityId}/complete/{userId} ---

@@ -192,26 +192,52 @@ namespace LMS.API.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
-        [Authorize(Roles = Role.Teacher)]
-        public async Task<ActionResult> DeleteUser(string id)
+	  [HttpPatch("{id}/profileImage")]
+		public async Task<ActionResult> UpdateProfileImage(string id, [FromBody] string? imageUrl)
+		{
+			var user = await _userManager.FindByIdAsync(id);
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
+			{
+					return Forbid();
+			}
+
+			user.UpdatedAt = DateTime.UtcNow;
+			user.ImageUrl = imageUrl;
+
+			var updateResult = await _userManager.UpdateAsync(user);
+			if (!updateResult.Succeeded)
+			{
+				return BadRequest(updateResult.Errors.Select(e => e.Description));
+			}
+
+			return NoContent();
+		}
+
+    [HttpDelete("{id}")]
+    // [Authorize(Roles = Role.Teacher)]
+    public async Task<ActionResult> DeleteUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
         {
-            var caller = CurrentUser.From(User);
-            if (caller is null) return Unauthorized();
+            return NotFound();
+        }
+				
+				if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
+        {
+            return Forbid();
+        }
 
-            var user = await _userManager.FindByIdAsync(id);
-
-            var decision = UserWorkflow.ValidateDelete(new UserDeleteInput(
-                Caller: caller,
-                TargetUserId: id,
-                UserExists: user is not null));
-
-            if (decision is not WorkflowResult<Unit>.Ok)
-                return this.ToActionResult(decision);
-
-            var result = await _userManager.DeleteAsync(user!);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors.Select(e => e.Description));
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+        {
+            return BadRequest(result.Errors.Select(e => e.Description));
+        }
 
             return NoContent();
         }
