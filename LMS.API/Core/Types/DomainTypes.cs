@@ -96,6 +96,26 @@ public record CourseWrite(
 public record ResourceWrite(
     string? URL, string ResourceType, string Name, string Description);
 
+// Pure input for Create/Update Module.
+public record ModuleWriteContext(
+    CallerContext Caller,
+    int ParentCourseId,
+    DateOnly CourseStartDate,
+    DateOnly CourseEndDate,
+    bool CourseExists,
+    bool ModuleExists,
+    IReadOnlyList<ModuleWrite>? ExistingModules,
+    ModuleWrite Write);
+
+public record ModuleWrite(
+    int Id,
+    string Name,
+    string Description,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    string? ImageURL);
+
+// Pure input for Create/Update Activity.
 public record ActivityContext(
     CallerContext Caller,
     bool ParentModuleExists,

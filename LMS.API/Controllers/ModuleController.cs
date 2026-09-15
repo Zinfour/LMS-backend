@@ -136,167 +136,143 @@ namespace LMS.API.Controllers
             return Ok(dto);
         }
 
-    [HttpPost]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> CreateModule(int courseId, ModuleForCreatingDto newModuleInput)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        [HttpPost]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult> CreateModule(int courseId, CreateModuleDto createModuleDto)
         {
-            return Unauthorized();
-        }
-        var isTeacher = User.IsInRole(Role.Teacher);
-        var isStudent = User.IsInRole(Role.Student);
-        if (!isTeacher)
-        {
-            return Unauthorized();
-        }
-        else if (!isStudent)
-        {
-            return BadRequest("Invalid role.");
-        }
+            var course = await _context.Course.Include(c => c.Modules)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
 
-        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == courseId);
-        if(course == null)
-        {
-            return NotFound();
-        }
-        var overlap = course.Modules.Any(m => 
-        m.StartDate < newModuleInput.EndDate && m.StartDate >= newModuleInput.StartDate
-        || m.EndDate <= newModuleInput.EndDate && m.EndDate > newModuleInput.StartDate);
-        if(overlap)
-        {
-            return BadRequest("Invalid request. Dates overlap with existing module(s).");
-        }
+            var validationResult = ModuleWorkflow.ValidateForCreate(
+                new ModuleWriteContext(
+                Caller: CurrentUser.From(User)!,
+                ParentCourseId: courseId,
+                CourseStartDate: course?.StartDate ?? default,
+                CourseEndDate: course?.EndDate ?? default,
+                CourseExists: course is not null,
+                ModuleExists: true,
+                ExistingModules: course?.Modules.Select(m => new ModuleWrite
+                (
+                    Id: m.Id,
+                    Name: m.Name,
+                    Description: m.Description,
+                    StartDate: m.StartDate,
+                    EndDate: m.EndDate,
+                    ImageURL: m.ImageURL
+                )).ToList(),
+                Write: new ModuleWrite
+                (
+                    Id: 0,
+                    Name: createModuleDto.Name,
+                    Description: createModuleDto.Description,
+                    StartDate: createModuleDto.StartDate,
+                    EndDate: createModuleDto.EndDate,
+                    ImageURL: createModuleDto.ImageURL
+                )));
 
-        var module = new Module
-        {
-            Name = newModuleInput.Name,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            Description = newModuleInput.Description,
-            StartDate = newModuleInput.StartDate,
-            EndDate = newModuleInput.EndDate,
-            ImageURL = newModuleInput.ImageURL,
-            CourseId = courseId,
-            Course = course
-        };
-
-        _context.Module.Add(module);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(
-            nameof(CreateModule),
-            new {id = module.Id},
-            new ModuleFullDto
+            if (validationResult is not WorkflowResult<ModuleWrite>.Ok)
             {
-                Id = module.Id,
-                CreatedAt = module.CreatedAt,
-                UpdatedAt = module.UpdatedAt,
-                Name = module.Name,
-                Description = module.Description,
-                StartDate = module.StartDate,
-                EndDate = module.EndDate,
-                ImageURL = module.ImageURL,
-                Activities = [],
-                Resources = [],
-                CourseId = courseId
-            });
-    }
+                return this.ToActionResult(validationResult);
+            }
 
-    [HttpPut("{moduleId}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult> updateModule(int courseId, int moduleId, ModuleFullDto moduleToUpdate)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
-        {
-            return Unauthorized();
-        }
-        var isTeacher = User.IsInRole(Role.Teacher);
-        var isStudent = User.IsInRole(Role.Student);
-        if (!isTeacher)
-        {
-            return Unauthorized();
-        }
-        else if (!isStudent)
-        {
-            return BadRequest("Invalid role.");
+            var module = new Module
+            {
+                Name = createModuleDto.Name,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Description = createModuleDto.Description,
+                StartDate = createModuleDto.StartDate,
+                EndDate = createModuleDto.EndDate,
+                ImageURL = createModuleDto.ImageURL,
+                CourseId = courseId,
+                Course = course!
+            };
+
+            _context.Module.Add(module);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(CreateModule),
+                new { id = module.Id },
+                module.ToModuleFullDto(course!.Modules.Count)
+                );
         }
 
-        var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == courseId);
-        if(course == null)
+        [HttpPut("{moduleId}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult> updateModule(int courseId, int moduleId, UpdateModuleDto updateModuleDto)
         {
-            return NotFound();
-        }
-        var overlap = course.Modules.Any(m => 
-        (m.StartDate < moduleToUpdate.EndDate && m.StartDate >= moduleToUpdate.StartDate
-        || m.EndDate <= moduleToUpdate.EndDate && m.EndDate > moduleToUpdate.StartDate) && m.Id != moduleToUpdate.Id);
-        if(overlap)
-        {
-            return BadRequest("Invalid request. Dates overlap with existing module(s).");
-        }
+            var course = await _context.Course.Include(c => c.Modules)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
 
-        var module = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleToUpdate.Id);
-        if(module == null)
-        {
-            return NotFound();
+            var module = course?.Modules.FirstOrDefault(m => m.Id == moduleId);
+
+            var validationResult = ModuleWorkflow.ValidateForUpdate(
+                new ModuleWriteContext(
+                Caller: CurrentUser.From(User)!,
+                ParentCourseId: courseId,
+                CourseStartDate: course?.StartDate ?? default,
+                CourseEndDate: course?.EndDate ?? default,
+                CourseExists: course is not null,
+                ModuleExists: module is not null,
+                ExistingModules: course?.Modules.Select(m => new ModuleWrite
+                (
+                    Id: m.Id,
+                    Name: m.Name,
+                    Description: m.Description,
+                    StartDate: m.StartDate,
+                    EndDate: m.EndDate,
+                    ImageURL: m.ImageURL
+                )).ToList(),
+                Write: new ModuleWrite
+                (
+                    Id: moduleId,
+                    Name: updateModuleDto.Name,
+                    Description: updateModuleDto.Description,
+                    StartDate: updateModuleDto.StartDate,
+                    EndDate: updateModuleDto.EndDate,
+                    ImageURL: updateModuleDto.ImageURL
+                )));
+
+            if (validationResult is not WorkflowResult<ModuleWrite>.Ok)
+            {
+                return this.ToActionResult(validationResult);
+            }
+
+            module!.Id = updateModuleDto.Id;
+            module.UpdatedAt = DateTime.UtcNow;
+            module.Name = updateModuleDto.Name;
+            module.Description = updateModuleDto.Description;
+            module.StartDate = updateModuleDto.StartDate;
+            module.EndDate = updateModuleDto.EndDate;
+            module.ImageURL = updateModuleDto.ImageURL;
+            module.CourseId = courseId;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
-
-        module.Id = moduleToUpdate.Id;
-        module.CreatedAt = moduleToUpdate.CreatedAt;
-        module.UpdatedAt = DateTime.UtcNow;
-        module.Name = moduleToUpdate.Name;
-        module.Description = moduleToUpdate.Description;
-        module.StartDate = moduleToUpdate.StartDate;
-        module.EndDate = moduleToUpdate.EndDate;
-        module.ImageURL = moduleToUpdate.ImageURL;
-        module.CourseId = moduleToUpdate.CourseId;
-        
-        _context.Module.Update(module);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
 
         // ---------- DELETE /api/courses/{courseId}/modules/{moduleId} ----------
         [HttpDelete("{moduleId}")]
         [Authorize(Roles = Role.Teacher)]
         public async Task<ActionResult> DeleteModule(int courseId, int moduleId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var isTeacher = User.IsInRole(Role.Teacher);
-            var isStudent = User.IsInRole(Role.Student);
-
-            if (!isTeacher)
-            {
-                return Unauthorized();
-            }
-            else if (!isStudent)
-            {
-                return BadRequest("Invalid role.");
-            }
-
-            if(!_context.Course.Any(c => c.Id == courseId))
+            if (!_context.Course.Any(c => c.Id == courseId))
             {
                 return NotFound($"Couldn't find course with id: {courseId}");
             }
 
             var moduleToDelete = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleId && m.CourseId == courseId);
 
-            if(moduleToDelete == null)
+            if (moduleToDelete == null)
             {
                 return NotFound($"Couldn't find module with id: {moduleId}");
             }
 
             _context.Module.Remove(moduleToDelete);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
     }

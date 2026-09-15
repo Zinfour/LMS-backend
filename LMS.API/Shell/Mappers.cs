@@ -180,4 +180,20 @@ public static class Mappers
         CurrentStatus = status ?? ModuleStatus.overdue,
         Order = order,
     };
+
+    public static ModuleFullDto ToModuleFullDto(this Module m, int totalNumberOfModules) => new()
+    {
+        Id = m.Id,
+        CreatedAt = m.CreatedAt,
+        UpdatedAt = m.UpdatedAt,
+        Name = m.Name,
+        Description = m.Description,
+        StartDate = m.StartDate,
+        EndDate = m.EndDate,
+        ImageURL = m.ImageURL,
+        CourseId = m.CourseId,
+        Activities = m.Activities.Select(a => a.ToActivityDto()).ToList(),
+        Resources = m.Resources.Select(r => r.ToResourceDto()).ToList(),
+        TotalNumberOfModules = totalNumberOfModules,
+    };
 }
