@@ -247,9 +247,42 @@ namespace LMS.API.Controllers
         // ---------- DELETE /api/courses/{courseId}/modules/{moduleId} ----------
         [HttpDelete("{moduleId}")]
         [Authorize(Roles = Role.Teacher)]
-        public ActionResult DeleteModule(int courseId, int moduleId)
+        public async Task<ActionResult> DeleteModule(int courseId, int moduleId)
         {
-            return BadRequest();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var isTeacher = User.IsInRole(Role.Teacher);
+            var isStudent = User.IsInRole(Role.Student);
+
+            if (!isTeacher)
+            {
+                return Unauthorized();
+            }
+            else if (!isStudent)
+            {
+                return BadRequest("Invalid role.");
+            }
+
+            if(!_context.Course.Any(c => c.Id == courseId))
+            {
+                return NotFound($"Couldn't find course with id: {courseId}");
+            }
+
+            var moduleToDelete = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleId && m.CourseId == courseId);
+
+            if(moduleToDelete == null)
+            {
+                return NotFound($"Couldn't find module with id: {moduleId}");
+            }
+
+            _context.Module.Remove(moduleToDelete);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }
