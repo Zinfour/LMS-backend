@@ -211,11 +211,13 @@ public class ModuleController(LmsContext lmsContext, UserManager<ApplicationUser
         var isStudent = User.IsInRole(Role.Student);
         if (!isTeacher)
         {
-            return Unauthorized();
-        }
-        else if (!isStudent)
-        {
-            return BadRequest("Invalid role.");
+            if (!isStudent)
+            {
+                return BadRequest("Invalid role.");
+            } else
+            {
+                return Unauthorized();
+            }
         }
 
         var course = await _context.Course.FirstOrDefaultAsync(c => c.Id == courseId);
