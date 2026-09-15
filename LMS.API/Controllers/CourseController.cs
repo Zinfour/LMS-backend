@@ -25,12 +25,13 @@ namespace LMS.API.Controllers
         [Authorize(Roles = Role.Teacher)]
         public async Task<ActionResult<IEnumerable<CourseDto>>> GetCourses()
         {
-            var courseDtos = await _context.Course.Select(c => c.ToCourseDto()).ToListAsync();
-
-            foreach (var dto in courseDtos)
-            {
-                await AttachValues(dto);
-            }
+            var courseDtos = await _context.Course
+                .Include(c => c.Modules).ThenInclude(m => m.Activities).ThenInclude(a => a.CompletedUsers)
+                .Include(c => c.Modules).ThenInclude(m => m.Activities)
+                .Include(c => c.Modules).ThenInclude(m => m.Resources)
+                .Include(c => c.Users).ThenInclude(u => u.Roles)
+                .Include(c => c.Resources)
+                .Select(c => c.ToCourseDto()).ToListAsync();
 
             return Ok(courseDtos);
         }
@@ -48,50 +49,21 @@ namespace LMS.API.Controllers
             var resolved = CourseAccess.ResolveCourseId(caller, id);
             if (resolved is null) return BadRequest("Invalid role.");
 
-            var dto = await _context.Course
-                .Where(c => c.Id == resolved)
-                .Select(c => c.ToCourseDto())
-                .FirstOrDefaultAsync();
+            var courseDto = await _context.Course
+                .Where(c => c.Id == resolved.Value)
+                .Include(c => c.Modules).ThenInclude(m => m.Activities).ThenInclude(a => a.CompletedUsers)
+                .Include(c => c.Modules).ThenInclude(m => m.Activities)
+                .Include(c => c.Modules).ThenInclude(m => m.Resources)
+                .Include(c => c.Users).ThenInclude(u => u.Roles)
+                .Include(c => c.Resources)
+                .Select(c => c.ToCourseDto(user.Id)).FirstOrDefaultAsync();
 
-            if (dto is null)
+            if (courseDto is null)
             {
                 return NotFound("Course not found.");
             }
 
-            await AttachValues(dto);
-
-            return Ok(dto);
-        }
-
-        private async Task AttachValues(CourseDto dto)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user is null) return;
-            var roles = await _userManager.GetRolesAsync(user);
-            var caller = new CallerContext(user.Id,
-                roles.Contains(Role.Teacher), roles.Contains(Role.Student), user.CourseId);
-            
-            dto.Modules = await _context.Module
-                .Where(m => m.CourseId == dto.Id)
-                .Select(m => m.ToModuleDto(
-                    m.Activities.Count(a => a.CompletedUsers.Any(u => u.Id == user.Id)),
-                    ModuleStatusWorkflow.Calculate(
-                        m.StartDate, m.EndDate, m.Activities.Count(),
-                        m.Activities.Count(a => a.CompletedUsers.Any(u => u.Id == user.Id)),
-                        DateOnly.FromDateTime(DateTime.UtcNow)),
-                    _context.Module.Count(md => md.CourseId == m.CourseId && md.StartDate < m.StartDate)))
-                .ToListAsync();
-            
-            dto.Resources = await _context.CourseResource
-                .Where(r => r.CourseId == dto.Id)
-                .Select(r => r.ToResourceDto()).ToListAsync();
-            
-            dto.Students = await _context.Users.Where(user => user.Roles.Any(r => r.Name == Role.Student)).Select(u => u.ToUserDto()).ToListAsync();
-            
-            dto.Teacher = await _context.Users
-                .Where(user => user.Roles.Any(r => r.Name == Role.Teacher))
-                .Select(u => u.ToUserDto())
-                .FirstOrDefaultAsync() ?? new UserDto();
+            return Ok(courseDto);
         }
 
         [HttpPost]

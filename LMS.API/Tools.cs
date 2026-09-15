@@ -33,7 +33,7 @@ namespace LMS.API
         }
 
         
-        public static ModuleStatus calculateStatus(Module m, ApplicationUser user)
+        public static ModuleStatus calculateStatus(Module m, string userId)
         {
             DateOnly currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             if(currentDate < m.StartDate)
@@ -42,7 +42,7 @@ namespace LMS.API
             } else if(m.StartDate < currentDate && currentDate < m.EndDate)
             {
                 return ModuleStatus.inProgress;
-            } else if(m.Activities.All(a => a.CompletedUsers.Any(u => u.Id == user.Id)))
+            } else if(m.Activities.All(a => a.CompletedUsers.Any(u => u.Id == userId)))
             {
                 return ModuleStatus.completed;
             } else

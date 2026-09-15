@@ -5,6 +5,7 @@ using LMS.API.DTOs.Auth;
 using LMS.API.DTOs.Course;
 using LMS.API.DTOs.Resource;
 using LMS.API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace LMS.API.Shell;
 
@@ -44,7 +45,7 @@ public static class Mappers
     r.URL, Tools.ResourceTypeToString(r.ResourceType),
     r.Name, r.Description, 0);
 
-    public static CourseDto ToCourseDto(this Models.Course c) => new()
+    public static CourseDto ToCourseDto(this Models.Course c, string userId = null!) => new()
     {
         Id = c.Id,
         CreatedAt = c.CreatedAt,
@@ -54,21 +55,26 @@ public static class Mappers
         StartDate = c.StartDate,
         EndDate = c.EndDate,
         ImageURL = c.ImageURL,
-        //Resources = c.Resources.Select(r => new DTOs.Course.CourseResourceDto
-        //{
-        //    Id = r.Id,
-        //    CreatedAt = r.CreatedAt,
-        //    UpdatedAt = r.UpdatedAt,
-        //    CreatedByUserId = r.CreatedByUserId,
-        //    UpdatedByUserId = r.UpdatedByUserId,
-        //    URL = r.URL,
-        //    ResourceType = r.ResourceType
-        //}).ToList(),
-        //Students = c.Users.Where(u => u.Roles.Any(r => r.Name == Role.Student))
-        //.Select(u => u.ToUserDto()).ToList(),
-        //Teacher = c.Users.Where(u => u.Roles.Any(r => r.Name == Role.Teacher))
-        //.Select(u => u.ToUserDto()).FirstOrDefault() ?? new UserDto(),
-        //Modules = c.Modules.Select(m => m.ToModuleDto()).ToList()
+        Resources = c.Resources.Select(r => r.ToResourceDto()).ToList(),
+        Students = c.Users.Where(u => u.Roles.Any(r => r.Name == Role.Student))
+        .Select(u => u.ToUserDto()).ToList(),
+        Teacher = c.Users.Where(u => u.Roles.Any(r => r.Name == Role.Teacher))
+        .Select(u => u.ToUserDto()).FirstOrDefault() ?? new UserDto(),
+        Modules = c.Modules.Select(m => new ModuleDto
+        {
+            Id = m.Id,
+            Name = m.Name,
+            Description = m.Description,
+            StartDate = m.StartDate,
+            EndDate = m.EndDate,
+            ImageURL = m.ImageURL,
+            CourseId = m.CourseId,
+            ActivitiesNumber = m.Activities.Count,
+            ResourcesNumber = m.Resources.Count,
+            NumberOfCompletedActivities = userId == null ? 0 : m.Activities.Where(a => a.CompletedUsers.Any(u => u.Id == userId)).ToList().Count,
+            Order = userId == null ? 0 : c.Modules.Count(md => md.CourseId == m.CourseId && md.StartDate < m.StartDate),
+            CurrentStatus = userId == null ? ModuleStatus.inProgress : Tools.calculateStatus(m, userId)
+        }).ToList()
     };
 
     public static UserDto ToUserDto(this Models.ApplicationUser u) => new()
@@ -164,23 +170,6 @@ public static class Mappers
     };
 
     // ---------- Module projections ----------
-
-    public static ModuleDto ToModuleDto(this Module m, int completedActivities = 0, ModuleStatus? status = null, int order = 0) => new()
-    {
-        Id = m.Id,
-        Name = m.Name,
-        Description = m.Description,
-        StartDate = m.StartDate,
-        EndDate = m.EndDate,
-        ImageURL = m.ImageURL,
-        CourseId = m.CourseId,
-        ActivitiesNumber = m.Activities.Count,
-        ResourcesNumber = m.Resources.Count,
-        NumberOfCompletedActivities = completedActivities,
-        CurrentStatus = status ?? ModuleStatus.overdue,
-        Order = order,
-    };
-
     public static ModuleFullDto ToModuleFullDto(this Module m, int totalNumberOfModules) => new()
     {
         Id = m.Id,
