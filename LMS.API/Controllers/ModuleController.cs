@@ -161,6 +161,13 @@ namespace LMS.API.Controllers
         {
             return NotFound();
         }
+        var overlap = course.Modules.Any(m => 
+        m.StartDate < newModuleInput.EndDate && m.StartDate >= newModuleInput.StartDate
+        || m.EndDate <= newModuleInput.EndDate && m.EndDate > newModuleInput.StartDate);
+        if(overlap)
+        {
+            return BadRequest("Invalid request. Dates overlap with existing module(s).");
+        }
 
         var module = new Module
         {
@@ -222,6 +229,14 @@ namespace LMS.API.Controllers
         {
             return NotFound();
         }
+        var overlap = course.Modules.Any(m => 
+        (m.StartDate < moduleToUpdate.EndDate && m.StartDate >= moduleToUpdate.StartDate
+        || m.EndDate <= moduleToUpdate.EndDate && m.EndDate > moduleToUpdate.StartDate) && m.Id != moduleToUpdate.Id);
+        if(overlap)
+        {
+            return BadRequest("Invalid request. Dates overlap with existing module(s).");
+        }
+
         var module = await _context.Module.FirstOrDefaultAsync(m => m.Id == moduleToUpdate.Id);
         if(module == null)
         {
