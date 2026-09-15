@@ -78,42 +78,6 @@ namespace LMS.API.Controllers
                 : Ok(activityDto);
         }
 
-        [HttpDelete]
-        [Authorize(Roles = Role.Teacher)]
-        [Route("activityId")]
-        public async Task<ActionResult> DeleteActivity(int activityId)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
-            var isTeacher = User.IsInRole(Role.Teacher);
-            var isStudent = User.IsInRole(Role.Student);
-
-            if (!isTeacher)
-            {
-                return Unauthorized();
-            }
-            else if (!isStudent)
-            {
-                return BadRequest("Invalid role.");
-            }
-            var activityToDelete = await _context.Activity.FirstOrDefaultAsync(a => a.Id == activityId);
-
-            if (activityToDelete == null)
-            {
-                return NotFound($"Couldn't find activity with id: {activityId}");
-            }
-
-            _context.Activity.Remove(activityToDelete);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
         // --- Command: POST /api/activities/{activityId}/complete/{userId} ---
         [HttpPost("{activityId}/complete/{userId}")]
         [Authorize]
@@ -150,8 +114,128 @@ namespace LMS.API.Controllers
         }
 
         // --- Placeholders untouched ---
-        [HttpPost][Authorize(Roles = Role.Teacher)] public ActionResult CreateActivity() => BadRequest();
-        [HttpPut][Authorize(Roles = Role.Teacher)] public ActionResult UpdateActivity() => BadRequest();
-        [HttpDelete][Authorize(Roles = Role.Teacher)] public ActionResult DeleteActivity() => BadRequest();
+        [HttpPost]
+        [Authorize(Roles = Role.Teacher)] 
+        public async Task<ActionResult> CreateActivity([FromBody] CreateActivityDto createActivityDto)
+        {
+            var module = await _context.Module.Where(m => m.Id == createActivityDto.ModuleId).Include(m => m.Activities).FirstOrDefaultAsync();
+
+            var validationResult = ActivityWorkflow.ValidateForCreate(new ActivityContext(
+                Caller: CurrentUser.From(User)!,
+                ParentModuleExists: module is not null,
+                ParentModuleId: createActivityDto.ModuleId,
+                ModuleStartDate: module == null ? DateOnly.MinValue : module.StartDate,
+                ModuleEndDate: module == null ? DateOnly.MinValue : module.EndDate,
+                ExistingActivities: (IReadOnlyList<ActivityWrite>?)module?.Activities.Select(a => new ActivityWrite(
+                    Id: a.Id,
+                    Name: a.Name,
+                    Description: a.Description,
+                    StartTime: a.StartTime,
+                    EndTime: a.EndTime,
+                    ActivityExists: true
+                )).ToList(),
+                Write: new ActivityWrite(
+                    Id: 0,
+                    Name: createActivityDto.Name,
+                    Description: createActivityDto.Description,
+                    StartTime: createActivityDto.StartTime,
+                    EndTime: createActivityDto.EndTime,
+                    ActivityExists: true
+                )
+            ));
+
+            if(validationResult is not WorkflowResult<ActivityWrite>.Ok ok)
+            {
+                return this.ToActionResult(validationResult);
+            }
+
+            var newActivity = new Activity
+            {
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Type = createActivityDto.Type,
+                Name = createActivityDto.Name,
+                Description = createActivityDto.Description,
+                StartTime = createActivityDto.StartTime,
+                EndTime = createActivityDto.EndTime,
+                ModuleId = createActivityDto.ModuleId
+            };
+            _context.Activity.Add(newActivity);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetActivity), new { activityId = newActivity.Id }, newActivity.ToActivityDto());
+        }
+
+        [HttpPut("{activityId}")]
+        [Authorize(Roles = Role.Teacher)] 
+        public async Task<ActionResult> UpdateActivityAsync(int activityId, [FromBody] UpdateActivityDto updateActivityDto)
+        {
+            var module = await _context.Module.Where(m => m.Id == updateActivityDto.ModuleId).Include(m => m.Activities).FirstOrDefaultAsync();
+
+            var existingActivity = await _context.Activity.FirstOrDefaultAsync(a => a.Id == activityId);
+
+            var validationResult = ActivityWorkflow.ValidateForUpdate(new ActivityContext(
+                Caller: CurrentUser.From(User)!,
+                ParentModuleExists: module is not null,
+                ParentModuleId: updateActivityDto.ModuleId,
+                ModuleStartDate: module == null ? DateOnly.MinValue : module.StartDate,
+                ModuleEndDate: module == null ? DateOnly.MinValue : module.EndDate,
+                ExistingActivities: (IReadOnlyList<ActivityWrite>?)module?.Activities.Select(a => new ActivityWrite(
+                    Id: a.Id,
+                    Name: a.Name,
+                    Description: a.Description,
+                    StartTime: a.StartTime,
+                    EndTime: a.EndTime,
+                    ActivityExists: true
+                )).ToList(),
+                Write: new ActivityWrite(
+                    Id: updateActivityDto.Id,
+                    Name: updateActivityDto.Name,
+                    Description: updateActivityDto.Description,
+                    StartTime: updateActivityDto.StartTime,
+                    EndTime: updateActivityDto.EndTime,
+                    ActivityExists: existingActivity != null
+                )
+            ));
+
+            if (validationResult is not WorkflowResult<ActivityWrite>.Ok ok)
+            {
+                return this.ToActionResult(validationResult);
+            }
+
+            if(existingActivity != null) 
+            {
+                existingActivity.UpdatedAt = DateTime.UtcNow;
+                existingActivity.Type = updateActivityDto.Type;
+                existingActivity.Name = updateActivityDto.Name;
+                existingActivity.Description = updateActivityDto.Description;
+                existingActivity.ImageURL = updateActivityDto.ImageURL;
+                existingActivity.StartTime = updateActivityDto.StartTime;
+                existingActivity.EndTime = updateActivityDto.EndTime;
+                existingActivity.ModuleId = updateActivityDto.ModuleId;
+
+                await _context.SaveChangesAsync();
+            }
+
+            return NoContent();
+        }
+
+        [HttpDelete]
+        [Authorize(Roles = Role.Teacher)]
+        [Route("activityId")]
+        public async Task<ActionResult> DeleteActivity(int activityId)
+        {
+            var activityToDelete = await _context.Activity.FirstOrDefaultAsync(a => a.Id == activityId);
+
+            if (activityToDelete == null)
+            {
+                return NotFound($"Couldn't find activity with id: {activityId}");
+            }
+
+            _context.Activity.Remove(activityToDelete);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

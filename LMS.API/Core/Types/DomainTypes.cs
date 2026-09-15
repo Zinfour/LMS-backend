@@ -96,6 +96,18 @@ public record CourseWrite(
 public record ResourceWrite(
     string? URL, string ResourceType, string Name, string Description);
 
+public record ActivityContext(
+    CallerContext Caller,
+    bool ParentModuleExists,
+    int ParentModuleId,
+    DateOnly ModuleStartDate,
+    DateOnly ModuleEndDate,
+    IReadOnlyList<ActivityWrite>? ExistingActivities,
+    ActivityWrite Write);
+
+public record ActivityWrite(
+    int Id, string Name, string Description, DateTime StartTime, DateTime EndTime, bool ActivityExists);
+
 // Pure input for creating a submission.
 public record SubmissionWrite(
     string Text, int AssignmentId);
