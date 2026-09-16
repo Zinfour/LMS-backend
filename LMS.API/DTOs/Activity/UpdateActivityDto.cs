@@ -4,7 +4,6 @@ namespace LMS.API.DTOs;
 
 public class UpdateActivityDto
 {
-    public int Id { get; set; }
     public ActivityType Type { get; set; }
     public string Name { get; set; } = null!;
     public DateTime StartTime { get; set; }
