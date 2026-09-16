@@ -10,10 +10,9 @@ public static class ModuleStatusWorkflow
         DateOnly today)
     {
         if (today < start) return ModuleStatus.locked;
-        if (today > end) return ModuleStatus.overdue;
+        if(start < today && today < end && activityCount == 0) return ModuleStatus.inProgress;
         if (activityCount > 0 && completeActivityCount == activityCount) return ModuleStatus.completed;
-        // if (start < today && today < end) return ModuleStatus.inProgress;
         
-        return ModuleStatus.inProgress;
+        return ModuleStatus.overdue;
     }
 }

@@ -4,7 +4,7 @@ namespace LMS.API.Core.Workflows;
 
 public static class CompleteActivityWorkflow
 {
-    public static WorkflowResult<Unit> Execute(CompleteActivityInput input)
+    public static WorkflowResult<Unit> Validate(CompleteActivityInput input)
     {
         if (AccessPolicy.DenyIfInvalidRole<Unit>(input.Caller) is { } roleFail) return roleFail;
         if (AccessPolicy.DenyIfNotSelfOrTeacher<Unit>(input.Caller, input.TargetUserId) is { } authFail) return authFail;

@@ -9,8 +9,6 @@ public static class ResourceWorkflow
         var errors = new List<string>();
         if (string.IsNullOrWhiteSpace(write.Name)) errors.Add("Name is required.");
         if (string.IsNullOrWhiteSpace(write.ResourceType)) errors.Add("ResourceType is required.");
-        // Tools.ParseResourceType has a default, so no failure on unknown type, but you could reject:
-        // if (!KnownTypes.Contains(write.ResourceType)) errors.Add("Unknown ResourceType.");
 
         return errors.Count == 0
             ? new WorkflowResult<ResourceWrite>.Ok(write)

@@ -92,7 +92,7 @@ namespace LMS.API.Controllers
             var alreadyCompleted = activity?.CompletedUsers.Any(u => u.Id == userId) ?? false;
 
             // Core: pure decision.
-            var decision = CompleteActivityWorkflow.Execute(new CompleteActivityInput(
+            var decision = CompleteActivityWorkflow.Validate(new CompleteActivityInput(
                 Caller: caller,
                 TargetUserId: userId,
                 ActivityId: activityId,

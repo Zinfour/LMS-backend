@@ -30,21 +30,4 @@ public static class ControllerBaseExtensions
             WorkflowResult<Unit>.ValidationFailed v => c.BadRequest(v.Errors),
             _ => c.StatusCode(500)
         };
-
-    //public static ActionResult<T> ToActionResult<T>(this ControllerBase c, WorkflowResult<T> result)
-    //    => result switch
-    //    {
-    //        WorkflowResult<T>.Ok ok =>
-    //            ok.Value is Unit
-    //                ? c.NoContent()
-    //                : c.Ok(ok.Value),
-
-    //        WorkflowResult<T>.Unauthorized u => c.Unauthorized(u.Reason),
-    //        WorkflowResult<T>.Forbidden => c.Forbid(),
-    //        WorkflowResult<T>.BadRequest b => c.BadRequest(b.Reason),
-    //        WorkflowResult<T>.NotFound n => c.NotFound(n.Reason),
-    //        WorkflowResult<T>.Conflict c2 => c.Conflict(c2.Reason),
-    //        WorkflowResult<T>.ValidationFailed v => c.BadRequest(v.Errors),
-    //        _ => c.StatusCode(500)
-    //    };
 }
