@@ -153,7 +153,7 @@ public static class Mappers
         };
 
     // ---------- Activity projection ----------
-    public static ActivityDto ToActivityDto(this Activity a) => new()
+    public static ActivityDto ToActivityDto(this Activity a, string? userId = null) => new()
     {
         Id = a.Id,
         CreatedAt = a.CreatedAt,
@@ -165,12 +165,13 @@ public static class Mappers
         Description = a.Description,
         ImageURL = a.ImageURL,
         ModuleId = a.ModuleId,
+        Completed = userId != null && a.CompletedUsers.Any(u => u.Id == userId),
         Assignment = a.Assignment?.ToAssignmentDto(),
         Resources = a.Resources.Select(r => r.ToResourceDto()).ToList()
     };
 
     // ---------- Module projections ----------
-    public static ModuleFullDto ToModuleFullDto(this Module m, int totalNumberOfModules) => new()
+    public static ModuleFullDto ToModuleFullDto(this Module m, int totalNumberOfModules, string? userId = null) => new()
     {
         Id = m.Id,
         CreatedAt = m.CreatedAt,
@@ -181,7 +182,7 @@ public static class Mappers
         EndDate = m.EndDate,
         ImageURL = m.ImageURL,
         CourseId = m.CourseId,
-        Activities = m.Activities.Select(a => a.ToActivityDto()).ToList(),
+        Activities = m.Activities.Select(a => a.ToActivityDto(userId)).ToList(),
         Resources = m.Resources.Select(r => r.ToResourceDto()).ToList(),
         TotalNumberOfModules = totalNumberOfModules,
     };

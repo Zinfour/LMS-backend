@@ -100,6 +100,7 @@ namespace LMS.API.Controllers
             var module = await _context.Module
                 .Include(m => m.Activities).ThenInclude(a => a.Assignment).ThenInclude(a => a!.Submissions)
                 .Include(m => m.Activities).ThenInclude(a => a.Resources)
+                .Include(m => m.Activities).ThenInclude(a => a.CompletedUsers)
                 .Include(m => m.Resources)
                 .Include(m => m.Course).ThenInclude(c => c.Modules)
                 .FirstOrDefaultAsync(m => m.CourseId == ok.Value && m.Id == moduleId);
@@ -128,7 +129,7 @@ namespace LMS.API.Controllers
                 CourseId = module.CourseId,
                 Order = await _context.Module.CountAsync(m => m.CourseId == module.CourseId && m.StartDate < module.StartDate),
                 TotalNumberOfModules = module.Course.Modules.Count,
-                Activities = module.Activities.Select(a => a.ToActivityDto()).ToList(),
+                Activities = module.Activities.Select(a => a.ToActivityDto(user.Id)).ToList(),
                 Resources = module.Resources.Select(r => r.ToResourceDto()).ToList()
             };
 
