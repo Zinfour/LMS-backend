@@ -152,6 +152,20 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
     [Authorize(Roles = Role.Teacher)]
     public async Task<ActionResult> CreateCourse(CreateCourseDto createCourseDto)
     {
+        var userIds = createCourseDto.Users?
+            .Select(userId => userId)
+            .Distinct()
+            .ToList() ?? [];
+
+        var users = await _context.Users
+            .Where(user => userIds.Contains(user.Id))
+            .ToListAsync();
+
+        if (users.Count != userIds.Count)
+        {
+            return BadRequest("One or more users were not found.");
+        }
+
         var course = new Course
         {
             CreatedAt = DateTime.UtcNow,
@@ -161,6 +175,7 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
             StartDate = createCourseDto.StartDate,
             EndDate = createCourseDto.EndDate,
             ImageURL = createCourseDto.ImageURL,
+            Users = users
         };
 
         _context.Course.Add(course);
@@ -197,28 +212,41 @@ public class CourseController(LmsContext lmsContext, UserManager<ApplicationUser
             return NotFound("Course not found.");
         }
 
+        var userIds = dto.Users?
+            .Select(userId => userId)
+            .Distinct()
+            .ToList() ?? [];
+
+        var users = await _context.Users
+            .Where(user => userIds.Contains(user.Id))
+            .ToListAsync();
+
+        if (users.Count != userIds.Count)
+        {
+            return BadRequest("One or more users were not found.");
+        }
+
+        await _context.Users
+            .Where(user => user.CourseId == id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(user => user.CourseId, (int?)null));
+
+        await _context.Users
+            .Where(user => userIds.Contains(user.Id))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(user => user.CourseId, id));
+
         course.UpdatedAt = DateTime.UtcNow;
         course.Name = dto.Name;
         course.Description = dto.Description;
         course.StartDate = dto.StartDate;
         course.EndDate = dto.EndDate;
         course.ImageURL = dto.ImageURL;
-        course.Resources = dto.Resources?.Select(r => new CourseResource
-        {
-            Id = r.Id,
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            CreatedByUserId = r.CreatedByUserId,
-            UpdatedByUserId = r.UpdatedByUserId,
-            URL = r.URL,
-            ResourceType = r.ResourceType
-        }).ToList()
-        ?? new List<CourseResource>();
 
         _context.Course.Update(course);
         await _context.SaveChangesAsync();
 
-        return Ok(course);
+        return Ok();
     }
 
     [HttpDelete("{id}")]

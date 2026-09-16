@@ -14,7 +14,7 @@ namespace LMS.API.DTOs.Auth
         public string Role { get; set; } = null!;
         public string? ImageUrl { get; set; }
 
-        public int CourseId { get; set; }
+        public int? CourseId { get; set; }
 
         public string Token { get; set; } = null!;
     }

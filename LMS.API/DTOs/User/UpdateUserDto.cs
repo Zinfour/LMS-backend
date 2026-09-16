@@ -8,7 +8,6 @@ namespace LMS.API.DTOs
         public string? Password { get; set; }
         public string Role { get; set; } = null!;
         public string? ImageUrl { get; set; }
-        
-        public int CourseId { get; set; }
+        public int? CourseId { get; set; }
     }
 }
