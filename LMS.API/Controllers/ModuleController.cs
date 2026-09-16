@@ -20,7 +20,6 @@ namespace LMS.API.Controllers
         private readonly LmsContext _context = lmsContext;
         private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-        // ---------- GET /api/courses/{courseId}/modules ----------
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<IEnumerable<ModuleDto>>> GetModules(int courseId)
@@ -33,14 +32,12 @@ namespace LMS.API.Controllers
 
             var courseExists = await _context.Course.AnyAsync(c => c.Id == courseId);
 
-            // Core: pure resolution of which course to read.
             var resolved = ModuleWorkflow.ResolveCourse(caller, courseId, courseExists);
             if (resolved is not WorkflowResult<int>.Ok ok)
                 return this.ToActionResult(resolved);
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-            // Shell: load the raw numbers, then let the pure workflow decide status.
             var raw = await _context.Module
                 .Where(m => m.CourseId == ok.Value)
                 .Select(m => new
@@ -79,7 +76,6 @@ namespace LMS.API.Controllers
             return Ok(result);
         }
 
-        // ---------- GET /api/courses/{courseId}/modules/{moduleId} ----------
         [HttpGet("{moduleId}")]
         [Authorize]
         public async Task<ActionResult<ModuleFullDto>> GetModule(int courseId, int moduleId)
@@ -96,7 +92,6 @@ namespace LMS.API.Controllers
             if (resolved is not WorkflowResult<int>.Ok ok)
                 return this.ToActionResult(resolved);
 
-            // Shell: load aggregate with everything we need for a pure projection.
             var module = await _context.Module
                 .Include(m => m.Activities).ThenInclude(a => a.Assignment).ThenInclude(a => a!.Submissions)
                 .Include(m => m.Activities).ThenInclude(a => a.Resources)
@@ -104,7 +99,6 @@ namespace LMS.API.Controllers
                 .Include(m => m.Course).ThenInclude(c => c.Modules)
                 .FirstOrDefaultAsync(m => m.CourseId == ok.Value && m.Id == moduleId);
 
-            // Core: pure access decision on the specific module.
             var access = ModuleWorkflow.ValidateModuleAccess(new ModuleReadContext(
                 Caller: caller,
                 ResolvedCourseId: ok.Value,
@@ -114,7 +108,6 @@ namespace LMS.API.Controllers
             if (access is not WorkflowResult<Unit>.Ok)
                 return this.ToActionResult(access);
 
-            // Shell: pure projection helpers.
             var dto = new ModuleFullDto
             {
                 Id = module!.Id,
@@ -252,7 +245,6 @@ namespace LMS.API.Controllers
             return NoContent();
         }
 
-        // ---------- DELETE /api/courses/{courseId}/modules/{moduleId} ----------
         [HttpDelete("{moduleId}")]
         [Authorize(Roles = Role.Teacher)]
         public async Task<ActionResult> DeleteModule(int courseId, int moduleId)

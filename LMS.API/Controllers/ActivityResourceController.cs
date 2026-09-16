@@ -28,7 +28,7 @@ namespace LMS.API.Controllers
 
             var dtos = await _context.ActivityResource
                 .Where(r => r.ActivityId == id)
-                .Select(r => r.ToResourceView())    // pure projection helper
+                .Select(r => r.ToResourceView())
                 .ToListAsync();
 
             return Ok(dtos.Select(v => v.ToDto()));
@@ -53,21 +53,21 @@ namespace LMS.API.Controllers
         public async Task<ActionResult<ResourceDto>> CreateActivityResource(
             int id, [FromBody] CreateResourceDto dto)
         {
-            // 1. Shell: resolve caller + existence facts.
+            
             var user = await _userManager.GetUserAsync(User);
             if (user is null) return Unauthorized("User not found.");
 
             if (!await _context.Activity.AnyAsync(a => a.Id == id))
                 return NotFound($"Activity with ID {id} not found.");
 
-            // 2. Core: validate the request purely.
+            
             var validation = ResourceWorkflow.Validate(new ResourceWrite(
                 dto.URL, dto.ResourceType, dto.Name, dto.Description));
 
             if (validation is not WorkflowResult<ResourceWrite>.Ok ok)
                 return this.ToActionResult(validation);
 
-            // 3. Shell: persist.
+            
             var now = DateTime.UtcNow;
             var resource = new ActivityResource
             {

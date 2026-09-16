@@ -19,7 +19,6 @@ namespace LMS.API.Controllers
         private readonly LmsContext _context = lmsContext;
         private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-        // ---------- GET /api/courses/{id}/resources ----------
         [HttpGet("api/courses/{id}/resources")]
         [Authorize(Roles = Role.Teacher + "," + Role.Student)]
         public async Task<ActionResult<IEnumerable<ResourceDto>>> GetCourseResources(int id)
@@ -43,7 +42,6 @@ namespace LMS.API.Controllers
             return Ok(resources.Select(r => r.ToResourceDto()));
         }
 
-        // ---------- GET /api/courses/resources/{id} ----------
         [HttpGet("api/courses/resources/{id}")]
         [Authorize(Roles = Role.Teacher)]
         public async Task<ActionResult<ResourceDto>> GetCourseResource(int id)
@@ -54,7 +52,6 @@ namespace LMS.API.Controllers
                 : Ok(resource.ToResourceDto());
         }
 
-        // ---------- POST /api/courses/{id}/resources ----------
         [HttpPost("api/courses/{id}/resources")]
         [Authorize(Roles = Role.Teacher)]
         public async Task<ActionResult<ResourceDto>> CreateCourseResource(
@@ -66,7 +63,6 @@ namespace LMS.API.Controllers
             var caller = new CallerContext(user.Id, IsTeacher: true, IsStudent: false, user.CourseId);
             var courseExists = await _context.Course.AnyAsync(c => c.Id == id);
 
-            // Core: validate.
             var validation = ResourceWorkflow.ValidateForCreate(new ResourceWriteContext(
                 Caller: caller,
                 ParentExists: courseExists,
@@ -76,7 +72,6 @@ namespace LMS.API.Controllers
             if (validation is not WorkflowResult<ResourceWrite>.Ok ok)
                 return this.ToActionResult(validation);
 
-            // Shell: persist.
             var now = DateTime.UtcNow;
             var resource = new CourseResource
             {
@@ -98,7 +93,6 @@ namespace LMS.API.Controllers
                 new { id = resource.Id }, resource.ToResourceDto());
         }
 
-        // ---------- PUT /api/courses/resources/{id} ----------
         [HttpPut("api/courses/resources/{id}")]
         [Authorize(Roles = Role.Teacher)]
         public async Task<ActionResult<ResourceDto>> UpdateCourseResource(
@@ -131,7 +125,6 @@ namespace LMS.API.Controllers
             return Ok(resource.ToResourceDto());
         }
 
-        // ---------- DELETE /api/courses/resources/{id} ----------
         [HttpDelete("api/courses/resources/{id}")]
         [Authorize(Roles = Role.Teacher)]
         public async Task<IActionResult> DeleteCourseResource(int id)

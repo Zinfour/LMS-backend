@@ -21,7 +21,6 @@ namespace LMS.API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<ResultModel>> Login([FromBody] LoginModel model)
         {
-            // ---- Shell: gather facts (I/O) ----
             var user = await userManager.FindByNameAsync(model.Username);
             var passwordOk = user is not null &&
                              await userManager.CheckPasswordAsync(user, model.Password);
@@ -39,13 +38,11 @@ namespace LMS.API.Controllers
                     user.Email ?? "", user.FirstName ?? "", user.LastName ?? "",
                     user.ImageUrl, user.CourseId));
 
-            // ---- Core: pure decision ----
             var result = LoginWorkflow.Execute(loginInput);
 
             if (result is not WorkflowResult<LoginPayload>.Ok ok)
                 return this.ToActionResult(result);
 
-            // ---- Shell: sign JWT (I/O) and assemble the DTO ----
             var jwt = configuration.GetSection("JwtSettings");
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwt["SecretKey"]!));

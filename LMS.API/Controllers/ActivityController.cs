@@ -21,7 +21,6 @@ namespace LMS.API.Controllers
         private readonly LmsContext _context = lmsContext;
         private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-        // --- Read: GET /api/activities ---
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<IEnumerable<ActivityDto>>> GetActivities(
@@ -54,7 +53,6 @@ namespace LMS.API.Controllers
             return Ok(activities);
         }
 
-        // --- Read: GET /api/activities/{activityId} ---
         [HttpGet("{activityId}")]
         [Authorize]
         public async Task<ActionResult<ActivityDto>> GetActivity(int activityId)
@@ -78,20 +76,19 @@ namespace LMS.API.Controllers
                 : Ok(activityDto);
         }
 
-        // --- Command: POST /api/activities/{activityId}/complete/{userId} ---
         [HttpPost("{activityId}/complete/{userId}")]
         [Authorize]
         public async Task<ActionResult> CompleteActivity(int activityId, string userId)
         {
+            // Shell: IO
             var caller = CurrentUser.From(User);
             if (caller is null) return Unauthorized();
 
-            // Shell: gather facts.
+            // Shell: IO
             var user = await _userManager.FindByIdAsync(userId);
             var activity = await _context.Activity
                 .Include(a => a.CompletedUsers)
                 .FirstOrDefaultAsync(a => a.Id == activityId);
-
             var alreadyCompleted = activity?.CompletedUsers.Any(u => u.Id == userId) ?? false;
 
             // Core: pure decision.
@@ -103,7 +100,7 @@ namespace LMS.API.Controllers
                 ActivityExists: activity is not null,
                 AlreadyCompleted: alreadyCompleted));
 
-            // Shell: if the pure core says OK, apply the mutation.
+            // Shell: IO
             if (decision is WorkflowResult<Unit>.Ok && !alreadyCompleted && activity is not null && user is not null)
             {
                 activity.CompletedUsers.Add(user);
@@ -113,7 +110,7 @@ namespace LMS.API.Controllers
             return this.ToActionResult(decision);
         }
 
-        // --- Placeholders untouched ---
+        
         [HttpPost]
         [Authorize(Roles = Role.Teacher)] 
         public async Task<ActionResult> CreateActivity([FromBody] CreateActivityDto createActivityDto)
@@ -166,6 +163,7 @@ namespace LMS.API.Controllers
             return CreatedAtAction(nameof(GetActivity), new { activityId = newActivity.Id }, newActivity.ToActivityDto());
         }
 
+        
         [HttpPut("{activityId}")]
         [Authorize(Roles = Role.Teacher)] 
         public async Task<ActionResult> UpdateActivityAsync(int activityId, [FromBody] UpdateActivityDto updateActivityDto)
