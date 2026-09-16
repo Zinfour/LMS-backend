@@ -32,6 +32,8 @@
 //     }
 // }
 
+using LMS.API.DTOs.Resource;
+
 namespace LMS.API.DTOs;
 
 public class ActivityDto
@@ -48,6 +50,6 @@ public class ActivityDto
     public int ModuleId { get; set; }
     public bool Completed { get; set; }
     public AssignmentDto? Assignment {get; set;}
-    public List<ActivityResourceDto> Resources {get; set;} = []; 
+    public List<ResourceDto> Resources {get; set;} = []; 
 
 }

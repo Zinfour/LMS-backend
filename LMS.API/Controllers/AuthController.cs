@@ -1,83 +1,71 @@
-﻿using LMS.API.Models;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using LMS.API.Core.Types;
+using LMS.API.Core.Workflows;
 using LMS.API.DTOs.Auth;
+using LMS.API.Models;
+using LMS.API.Shell;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace LMS.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController(
+        IConfiguration configuration,
+        UserManager<ApplicationUser> userManager) : ControllerBase
     {
-        private readonly ILogger<AuthController> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly UserManager<ApplicationUser> _userManager;
-
-        public AuthController(ILogger<AuthController> logger, IConfiguration configuration, UserManager<ApplicationUser> userManager)
-        {
-            _logger = logger;
-            _configuration = configuration;
-            _userManager = userManager;
-        }
-
         [HttpPost("login")]
         public async Task<ActionResult<ResultModel>> Login([FromBody] LoginModel model)
         {
-            var user = await _userManager.FindByNameAsync(model.Username);
+            // ---- Shell: gather facts (I/O) ----
+            var user = await userManager.FindByNameAsync(model.Username);
+            var passwordOk = user is not null &&
+                             await userManager.CheckPasswordAsync(user, model.Password);
+            var roles = user is not null
+                ? await userManager.GetRolesAsync(user)
+                : Array.Empty<string>();
 
-            if (user == null)
-            {
-                return Unauthorized("User does not exist.");
-            }
+            var loginInput = new LoginInput(
+                FoundUserId: user?.Id,
+                Username: model.Username,
+                PasswordMatches: passwordOk,
+                Roles: (IReadOnlyList<string>)roles,
+                Profile: user is null ? null : new UserProfile(
+                    user.Id, user.CreatedAt, user.UpdatedAt,
+                    user.Email ?? "", user.FirstName ?? "", user.LastName ?? "",
+                    user.ImageUrl, user.CourseId));
 
-            if (!await _userManager.CheckPasswordAsync(user, model.Password))
-            {
-                return Unauthorized("Invalid password.");
-            }
+            // ---- Core: pure decision ----
+            var result = LoginWorkflow.Execute(loginInput);
 
-            var roles = await _userManager.GetRolesAsync(user);
-            var role = roles.FirstOrDefault() ?? Role.Student; // Default role if none found
+            if (result is not WorkflowResult<LoginPayload>.Ok ok)
+                return this.ToActionResult(result);
 
-            // Create "claims" (information we bake into the token)
+            // ---- Shell: sign JWT (I/O) and assemble the DTO ----
+            var jwt = configuration.GetSection("JwtSettings");
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwt["SecretKey"]!));
+
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, model.Username),
-                new Claim(ClaimTypes.Role, role)
+                new(ClaimTypes.NameIdentifier, ok.Value.Profile.Id),
+                new(ClaimTypes.Name, model.Username),
+                new(ClaimTypes.Role, ok.Value.Role)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            // Create the JWT token with a 48-hour expiration
             var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
-                audience: _configuration["JwtSettings:Audience"],
+                issuer: jwt["Issuer"],
+                audience: jwt["Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(60 * 48), // 48 hours
-                signingCredentials: creds
-            );
+                expires: DateTime.UtcNow.AddMinutes(60 * 48),
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
-            var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(token);
-
-            var resultModel = new ResultModel
-            {
-                Id = user.Id,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                Email = user.Email ?? string.Empty,
-                FirstName = user.FirstName ?? string.Empty,
-                LastName = user.LastName ?? string.Empty,
-                Role = role,
-                ImageUrl = user.ImageUrl,
-                CourseId = user.CourseId,
-                Token = tokenToReturn
-            };
-
+            var resultModel = ok.Value.ToResultModel();
+            resultModel.Token = new JwtSecurityTokenHandler().WriteToken(token);
             return Ok(resultModel);
         }
     }

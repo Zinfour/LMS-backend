@@ -1,165 +1,133 @@
-﻿using LMS.API.Data;
+﻿using LMS.API.Core.Types;
+using LMS.API.Core.Workflows;
+using LMS.API.Data;
 using LMS.API.DTOs.Resource;
 using LMS.API.Models;
+using LMS.API.Shell;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace LMS.API.Controllers;
-
-[ApiController]
-public class ModuleResourcesController(LmsContext lmsContext, UserManager<ApplicationUser> userManager) : ControllerBase
+namespace LMS.API.Controllers
 {
-    private readonly LmsContext _context = lmsContext;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
-
-    [HttpGet("api/modules/{id}/resources")]
-    [Authorize(Roles = Role.Teacher + "," + Role.Student)]
-    public async Task<ActionResult<IEnumerable<ResourceDto>>> GetModuleResources(int id)
+    [ApiController]
+    public class ModuleResourcesController(
+        LmsContext lmsContext,
+        UserManager<ApplicationUser> userManager) : ControllerBase
     {
-        var resources = await _context.ModuleResource.Where(r => r.ModuleId == id).ToListAsync();
-        var resourceDtos = resources.Select(r => new ResourceDto
-        {
-            Id = r.Id,
-            CreatedAt = r.CreatedAt,
-            UpdatedAt = r.UpdatedAt,
-            CreatedByUserId = r.CreatedByUserId,
-            UpdatedByUserId = r.UpdatedByUserId,
-            URL = r.URL,
-            ResourceType = Tools.ResourceTypeToString(r.ResourceType),
-            Name = r.Name,
-            Description = r.Description,
-        });
-        return Ok(resourceDtos);
-    }
+        private readonly LmsContext _context = lmsContext;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-    [HttpGet("api/modules/resources/{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> GetModuleResource(int id)
-    {
-        var resource = await _context.ModuleResource.FindAsync(id);
-        if (resource == null)
+        [HttpGet("api/modules/{id}/resources")]
+        [Authorize(Roles = Role.Teacher + "," + Role.Student)]
+        public async Task<ActionResult<IEnumerable<ResourceDto>>> GetModuleResources(int id)
         {
-            return NotFound($"Module resource with ID {id} not found.");
+            var resources = await _context.ModuleResource
+                .Where(r => r.ModuleId == id)
+                .ToListAsync();
+
+            return Ok(resources.Select(r => r.ToResourceDto()));
         }
 
-        var resourceDto = new ResourceDto
+        [HttpGet("api/modules/resources/{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<ResourceDto>> GetModuleResource(int id)
         {
-            Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
-            CreatedByUserId = resource.CreatedByUserId,
-            UpdatedByUserId = resource.UpdatedByUserId,
-            URL = resource.URL,
-            ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
-            Name = resource.Name,
-            Description = resource.Description,
-        };
-
-        return Ok(resourceDto);
-    }
-
-    [HttpPost("api/modules/{id}/resources")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> CreateModuleResource(int id, [FromBody] CreateResourceDto createResourceDto)
-    {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-        {
-            return BadRequest("Logged-in User not found.");
+            var resource = await _context.ModuleResource.FindAsync(id);
+            return resource is null
+                ? NotFound($"Module resource with ID {id} not found.")
+                : Ok(resource.ToResourceDto());
         }
 
-        var module = await _context.Module.FindAsync(id);
-        if (module == null)
+        [HttpPost("api/modules/{id}/resources")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<ResourceDto>> CreateModuleResource(
+            int id, [FromBody] CreateResourceDto dto)
         {
-            return NotFound($"Module with ID {id} not found.");
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return BadRequest("Logged-in User not found.");
+
+            var caller = new CallerContext(user.Id, IsTeacher: true, IsStudent: false, user.CourseId);
+            var moduleExists = await _context.Module.AnyAsync(m => m.Id == id);
+
+            var validation = ResourceWorkflow.ValidateForCreate(new ResourceWriteContext(
+                Caller: caller,
+                ParentExists: moduleExists,
+                ParentId: id,
+                Write: new ResourceWrite(dto.URL, dto.ResourceType, dto.Name, dto.Description)));
+
+            if (validation is not WorkflowResult<ResourceWrite>.Ok ok)
+                return this.ToActionResult(validation);
+
+            var now = DateTime.UtcNow;
+            var resource = new ModuleResource
+            {
+                ModuleId = id,
+                CreatedAt = now,
+                UpdatedAt = now,
+                CreatedByUserId = user.Id,
+                UpdatedByUserId = user.Id,
+                Description = ok.Value.Description,
+                Name = ok.Value.Name,
+                URL = ok.Value.URL,
+                ResourceType = Tools.ParseResourceType(ok.Value.ResourceType)
+            };
+
+            _context.ModuleResource.Add(resource);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetModuleResource),
+                new { id = resource.Id }, resource.ToResourceDto());
         }
 
-        var resource = new ModuleResource
+        [HttpPut("api/modules/resources/{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<ActionResult<ResourceDto>> UpdateModuleResource(
+            int id, [FromBody] UpdateResourceDto dto)
         {
-            ModuleId = id,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            CreatedByUserId = user.Id,
-            UpdatedByUserId = user.Id,
-            Description = createResourceDto.Description,
-            Name = createResourceDto.Name,
-            URL = createResourceDto.URL,
-            ResourceType = Tools.ParseResourceType(createResourceDto.ResourceType.ToString())
-        };
+            var resource = await _context.ModuleResource.FindAsync(id);
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return BadRequest("Logged-in User not found.");
 
-        _context.ModuleResource.Add(resource);
-        await _context.SaveChangesAsync();
+            var caller = new CallerContext(user.Id, IsTeacher: true, IsStudent: false, user.CourseId);
 
-        var resourceDto = new ResourceDto
-        {
-            Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
-            CreatedByUserId = resource.CreatedByUserId,
-            UpdatedByUserId = resource.UpdatedByUserId,
-            URL = resource.URL,
-            ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
-            Name = resource.Name,
-            Description = resource.Description,
-        };
+            var validation = ResourceWorkflow.ValidateForUpdate(new ResourceWriteContext(
+                Caller: caller,
+                ParentExists: resource is not null,
+                ParentId: id,
+                Write: new ResourceWrite(dto.URL, dto.ResourceType, dto.Name, dto.Description)));
 
-        return CreatedAtAction(nameof(GetModuleResource), new { id = resource.Id }, resourceDto);
-    }
+            if (validation is not WorkflowResult<ResourceWrite>.Ok ok)
+                return this.ToActionResult(validation);
 
-    [HttpPut("api/modules/resources/{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<ActionResult<ResourceDto>> UpdateModuleResource(int id, [FromBody] UpdateResourceDto resourceDto)
-    {
-        var resource = await _context.ModuleResource.FindAsync(id);
-        if (resource == null)
-        {
-            return NotFound($"Module resource with ID {id} not found.");
+            resource!.UpdatedByUserId = user.Id;
+            resource.UpdatedAt = DateTime.UtcNow;
+            resource.Description = ok.Value.Description;
+            resource.Name = ok.Value.Name;
+            resource.URL = ok.Value.URL;
+            resource.ResourceType = Tools.ParseResourceType(ok.Value.ResourceType);
+            await _context.SaveChangesAsync();
+
+            return Ok(resource.ToResourceDto());
         }
 
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
+        [HttpDelete("api/modules/resources/{id}")]
+        [Authorize(Roles = Role.Teacher)]
+        public async Task<IActionResult> DeleteModuleResource(int id)
         {
-            return BadRequest("Logged-in User not found.");
+            var caller = CurrentUser.From(User);
+            if (caller is null) return Unauthorized();
+
+            var resource = await _context.ModuleResource.FindAsync(id);
+
+            var decision = ResourceWorkflow.ValidateForDelete(caller, resource is not null, id);
+            if (decision is not WorkflowResult<Unit>.Ok)
+                return this.ToActionResult(decision);
+
+            _context.ModuleResource.Remove(resource!);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
-
-        resource.UpdatedByUserId = user.Id;
-        resource.UpdatedAt = DateTime.UtcNow;
-        resource.Description = resourceDto.Description;
-        resource.Name = resourceDto.Name;
-        resource.URL = resourceDto.URL;
-        resource.ResourceType = Tools.ParseResourceType(resourceDto.ResourceType.ToString());
-        await _context.SaveChangesAsync();
-        var result = new ResourceDto
-        {
-            Id = resource.Id,
-            CreatedAt = resource.CreatedAt,
-            UpdatedAt = resource.UpdatedAt,
-            CreatedByUserId = resource.CreatedByUserId,
-            UpdatedByUserId = resource.UpdatedByUserId,
-            URL = resource.URL,
-            ResourceType = Tools.ResourceTypeToString(resource.ResourceType),
-            Name = resource.Name,
-            Description = resource.Description,
-        };
-
-        return Ok(result);
-    }
-
-    [HttpDelete("api/modules/resources/{id}")]
-    [Authorize(Roles = Role.Teacher)]
-    public async Task<IActionResult> DeleteModuleResource(int id)
-    {
-        var resource = await _context.ModuleResource.FindAsync(id);
-        if (resource == null)
-        {
-            return NotFound($"Module resource with ID {id} not found.");
-        }
-
-        _context.ModuleResource.Remove(resource);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
     }
 }

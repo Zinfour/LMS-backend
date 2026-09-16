@@ -1,9 +1,6 @@
 ﻿using LMS.API.Models.Resources;
-using LMS.API.DTOs;
-using System.Reflection;
-using Module = LMS.API.Models.Module;
-using Status = LMS.API.DTOs.ModuleDto.Status;
 using LMS.API.Models;
+using LMS.API.Core.Types;
 
 namespace LMS.API
 {
@@ -36,21 +33,21 @@ namespace LMS.API
         }
 
         
-        public static Status calculateStatus(Module m, ApplicationUser user)
+        public static ModuleStatus calculateStatus(Module m, string userId)
         {
             DateOnly currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             if(currentDate < m.StartDate)
             {
-                return Status.locked;
+                return ModuleStatus.locked;
             } else if(m.StartDate < currentDate && currentDate < m.EndDate)
             {
-                return Status.inProgress;
-            } else if(m.Activities.All(a => a.CompletedUsers.Any(u => u.Id == user.Id)))
+                return ModuleStatus.inProgress;
+            } else if(m.Activities.All(a => a.CompletedUsers.Any(u => u.Id == userId)))
             {
-                return Status.completed;
+                return ModuleStatus.completed;
             } else
             {
-                return Status.overdue;
+                return ModuleStatus.overdue;
             }
         }
     }
