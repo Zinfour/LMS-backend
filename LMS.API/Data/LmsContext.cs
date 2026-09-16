@@ -32,6 +32,12 @@ namespace LMS.API.Data
                     j => j.HasOne<ApplicationRole>().WithMany().HasForeignKey(ur => ur.RoleId),
                     j => j.HasOne<ApplicationUser>().WithMany().HasForeignKey(ur => ur.UserId));
 
+            builder.Entity<ApplicationUser>()
+                .HasOne(user => user.Course)
+                .WithMany(course => course.Users)
+                .HasForeignKey(user => user.CourseId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.Entity<ActivityResource>()
                 .HasOne<ApplicationUser>()
                 .WithMany()

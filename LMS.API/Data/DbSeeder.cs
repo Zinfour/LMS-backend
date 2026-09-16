@@ -25,19 +25,79 @@ public static class DbSeeder
         ("Isabella", "Moreau"),
     ];
 
+    private static readonly (string FirstName, string LastName)[] UnassignedStudentNames =
+    [
+        ("Mateo", "Garcia"),
+        ("Grace", "Williams"),
+        ("Henry", "Patel"),
+        ("Chloe", "Martin"),
+        ("Daniel", "Brown"),
+        ("Nora", "Taylor"),
+        ("Leo", "Wilson"),
+        ("Zoe", "Clark"),
+        ("Samuel", "Davis"),
+        ("Layla", "Moore"),
+    ];
+
+    private static readonly (string FirstName, string LastName)[] UnassignedTeacherNames =
+    [
+        ("Priya", "Shah"),
+        ("Marcus", "Reed"),
+        ("Elena", "Petrov"),
+        ("David", "Okafor"),
+    ];
+
+    private static readonly string[] AvatarUrls =
+    [
+        "https://images.unsplash.com/photo-1654110455429-cf322b40a906?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YXZhdGFyfGVufDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8YXZhdGFyfGVufDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1740252117044-2af197eea287?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YXZhdGFyfGVufDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1701615004837-40d8573b6652?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YXZhdGFyfGVufDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YXZhdGFyfGVufDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1740252117027-4275d3f84385?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8YXZhdGFyfGVufDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1740252117012-bb53ad05e370?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fGF2YXRhcnxlbnwwfDJ8MHx8fDI%3D",
+        "https://images.unsplash.com/photo-1569779213435-ba3167dde7cc?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fGF2YXRhcnxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1605087880595-8cc6db61f3c6?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NjZ8fGF2YXRhcnxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1620889406270-03d743d544c2?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nzd8fGF2YXRhcnxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1633245976565-3084baca3c31?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nzl8fGF2YXRhcnxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1560096434-c1cec8609cc5?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OTF8fGF2YXRhcnxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1645107914156-fc9e45906b04?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OTZ8fGF2YXRhcnxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1529068755536-a5ade0dcb4e8?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OTR8fGF2YXRhcnxlbnwwfDJ8MHx8fDI%3D",
+        "https://images.unsplash.com/photo-1623577284502-d65cdc6ba0b6?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1645107914072-6f16b732f224?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NjN8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1654762699761-b6d13143bb2e?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NjJ8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1695013079138-d39ea65ab0b6?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nzh8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1759701546655-d90ec831aa52?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODF8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1727933959587-fd3cf7926475?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NzZ8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1602494518375-c2dc5376f522?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8ODd8fHByb2ZpbGUlMjBwaWN0dXJlfDB8MnwwfHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1655293459479-cacd56abeaf6?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTExfHxwcm9maWxlJTIwcGljdHVyZXxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1586299485759-f62264d6b63f?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTEyfHxwcm9maWxlJTIwcGljdHVyZXxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1625474407059-8c543b6d1fc6?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTA5fHxwcm9maWxlJTIwcGljdHVyZXxlbnwwfDJ8MHx8Mg%3D%3D",
+        "https://images.unsplash.com/photo-1650381473833-3e2c74a40fbf?w=200&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTE2fHxwcm9maWxlJTIwcGljdHVyZXxlbnwwfDJ8MHx8Mg%3D%3D",
+    ];
+
+    private static readonly string[] SubmissionResponses =
+    [
+        "I approached this task by first outlining the expected behavior, then implementing the smallest working version before adding validation and handling the edge cases I found during testing. The final solution keeps the code readable and documents the assumptions I made along the way.",
+        "For this assignment, I broke the problem into smaller components and tested each one before wiring them together. I refined the types after discovering a few inconsistent states, and the submitted version includes the final flow along with the reasoning behind the important implementation choices.",
+        "I started with the requirements and created a simple plan for the data flow before writing the UI and supporting logic. After testing the main scenario and error cases, I adjusted the implementation to avoid duplicated work and made the final result easier to maintain.",
+        "My solution focuses on a clear structure: reusable functions handle the repeated behavior, while the main component coordinates the user-facing workflow. I also verified that the application behaves predictably with incomplete input and that the output matches the acceptance criteria.",
+        "I implemented the requested feature incrementally and used the intermediate results to identify where the state could become out of sync. The final submission includes defensive checks, clear naming, and a completed implementation that covers both the normal path and likely edge cases.",
+    ];
+
     // How many activities (in module order, out of Module 1/2/3/4) each student has completed so far.
     // Modules 5 and 6 haven't started yet, so nobody has activity there.
     private static readonly int[][] StudentProgress =
     [
-        [6, 7, 5, 2], // student@gmail.com  - on track, currently working through the routing module
-        [6, 7, 6, 3], // student1@gmail.com - ahead of schedule
-        [6, 7, 5, 2], // student2@gmail.com - on track
+        [6, 7, 5, 5], // student@gmail.com  - on track, currently working through the routing module
+        [6, 7, 6, 5], // student1@gmail.com - ahead of schedule
+        [6, 7, 5, 5], // student2@gmail.com - on track
         [6, 6, 3, 0], // student3@gmail.com - fell behind during module 2
         [6, 7, 1, 0], // student4@gmail.com - barely started module 3
         [4, 0, 0, 0], // student5@gmail.com - struggling since module 1
         [6, 7, 6, 6], // student6@gmail.com - finished everything released so far
-        [6, 7, 4, 1], // student7@gmail.com - average pace
-        [6, 7, 6, 3], // student8@gmail.com - caught back up on module 3
+        [6, 7, 4, 5], // student7@gmail.com - average pace
+        [6, 7, 6, 5], // student8@gmail.com - caught back up on module 3
         [6, 4, 0, 0], // student9@gmail.com - behind since module 2
     ];
 
@@ -57,31 +117,51 @@ public static class DbSeeder
             }
         }
 
-        // Already seeded, nothing left to do.
-        if (await context.Course.AnyAsync(cancellationToken))
+        var course = await context.Course.FirstOrDefaultAsync(cancellationToken);
+        var courseWasCreated = course == null;
+
+        if (courseWasCreated)
         {
-            return;
+            course = BuildCourse();
+            context.Course.Add(course);
+            await context.SaveChangesAsync(cancellationToken);
         }
 
-        var course = BuildCourse();
-        context.Course.Add(course);
-        await context.SaveChangesAsync(cancellationToken);
-
-        var teacher = await CreateUserAsync(userManager, "teacher@gmail.com", "Jordan", "Blake", Role.Teacher, course.Id, imageUrl: null);
+        var teacher = await CreateUserAsync(userManager, "teacher@gmail.com", "Jordan", "Blake", Role.Teacher, course!.Id, AvatarUrls[0]);
 
         var students = new List<ApplicationUser>();
+        var emailIdx = 0;
         for (var i = 0; i < StudentNames.Length; i++)
         {
-            var email = i == 0 ? "student@gmail.com" : $"student{i}@gmail.com";
+            var email = emailIdx == 0 ? "student@gmail.com" : $"student{emailIdx}@gmail.com";
             var (firstName, lastName) = StudentNames[i];
-            students.Add(await CreateUserAsync(userManager, email, firstName, lastName, Role.Student, course.Id, imageUrl: null));
+            students.Add(await CreateUserAsync(userManager, email, firstName, lastName, Role.Student, course.Id, AvatarUrls[i + 1]));
+            emailIdx++;
         }
 
-        AddResources(course, teacher.Id);
+        for (var i = 0; i < UnassignedStudentNames.Length; i++)
+        {
+            var (firstName, lastName) = UnassignedStudentNames[i];
+            await CreateUserAsync(userManager, $"student{emailIdx}@gmail.com", firstName, lastName, Role.Student, null, AvatarUrls[i + 11]);
+            emailIdx++;
+        }
+
+        for (var i = 0; i < UnassignedTeacherNames.Length; i++)
+        {
+            var (firstName, lastName) = UnassignedTeacherNames[i];
+            await CreateUserAsync(userManager, $"teacher{i + 2}@gmail.com", firstName, lastName, Role.Teacher, null, AvatarUrls[i + 21]);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
 
-        SeedStudentProgress(context, course, students);
-        await context.SaveChangesAsync(cancellationToken);
+        if (courseWasCreated)
+        {
+            AddResources(course!, teacher.Id);
+            await context.SaveChangesAsync(cancellationToken);
+
+            SeedStudentProgress(context, course!, students);
+            await context.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private static async Task<ApplicationUser> CreateUserAsync(
@@ -90,12 +170,13 @@ public static class DbSeeder
         string firstName,
         string lastName,
         string role,
-        int courseId,
+        int? courseId,
         string? imageUrl)
     {
         var existing = await userManager.FindByEmailAsync(email);
         if (existing != null)
         {
+            existing.ImageUrl ??= imageUrl;
             return existing;
         }
 
@@ -154,7 +235,7 @@ public static class DbSeeder
                         context.Submission.Add(new Submission
                         {
                             CreatedAt = now,
-                            Text = $"Submission from {student.FirstName} {student.LastName} for \"{activity.Assignment.Title}\".",
+                            Text = SubmissionResponses[random.Next(SubmissionResponses.Length)],
                             StudentId = student.Id,
                             AssignmentId = activity.Assignment.Id,
                         });
@@ -259,7 +340,7 @@ public static class DbSeeder
             Description = "A hands-on course covering component-driven UI development with React and TypeScript, powered by Vite. Students design, build, test, and ship a production-grade single-page application.",
             StartDate = new DateOnly(2026, 7, 6),
             EndDate = new DateOnly(2026, 12, 18),
-            ImageURL = "https://picsum.photos/seed/react-ts-vite-course/1200/600",
+            ImageURL = "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             Modules =
             [
                 new Module

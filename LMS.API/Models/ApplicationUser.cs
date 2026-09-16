@@ -12,8 +12,8 @@ namespace LMS.API.Models
         public DateTime UpdatedAt { get; set; }
         public string? ImageUrl { get; set; }
         public List<Submission> Submissions { get; set; } = null!;
-        public int CourseId { get; set; }
-        public Course Course { get; set; } = null!;
+        public int? CourseId { get; set; }
+        public Course? Course { get; set; }
 
         public ICollection<ApplicationRole> Roles { get; set; } = [];
 

@@ -12,6 +12,6 @@ namespace LMS.API.DTOs
         public string Role { get; set; } = null!;
         public string? ImageUrl { get; set; }
 
-        public int CourseId { get; set; }
+        public int? CourseId { get; set; }
     }
 }

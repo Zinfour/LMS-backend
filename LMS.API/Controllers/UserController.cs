@@ -95,10 +95,14 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
             return BadRequest($"Invalid role: {dto.Role}.");
         }
 
-        var course = await _context.Course.FindAsync(dto.CourseId);
-        if (course == null)
+        if(dto.CourseId is not null)
         {
-            return BadRequest("Invalid CourseId.");
+            var course = await _context.Course.FindAsync(dto.CourseId);
+            if (course == null)
+            {
+                return BadRequest("Invalid CourseId.");
+            }
+          
         }
 
         var now = DateTime.UtcNow;
@@ -164,10 +168,13 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
             return NotFound();
         }
 
-        var course = await _context.Course.FindAsync(dto.CourseId);
-        if (course == null)
+        if(dto.CourseId is not null)
         {
-            return BadRequest("Invalid CourseId.");
+            var course = await _context.Course.FindAsync(dto.CourseId);
+            if (course == null)
+            {
+                return BadRequest("Invalid CourseId.");
+            }
         }
 
         // Begin transaction. If we return without committing, all changes will be reverted.
@@ -218,31 +225,31 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
         return NoContent();
     }
 
-	  [HttpPatch("{id}/profileImage")]
-		public async Task<ActionResult> UpdateProfileImage(string id, [FromBody] string? imageUrl)
-		{
-			var user = await _userManager.FindByIdAsync(id);
-			if (user == null)
-			{
-				return NotFound();
-			}
+    [HttpPatch("{id}/profileImage")]
+    public async Task<ActionResult> UpdateProfileImage(string id, [FromBody] string? imageUrl)
+    {
+      var user = await _userManager.FindByIdAsync(id);
+      if (user == null)
+      {
+        return NotFound();
+      }
 
-			if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
-			{
-					return Forbid();
-			}
+      if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
+      {
+          return Forbid();
+      }
 
-			user.UpdatedAt = DateTime.UtcNow;
-			user.ImageUrl = imageUrl;
+      user.UpdatedAt = DateTime.UtcNow;
+      user.ImageUrl = imageUrl;
 
-			var updateResult = await _userManager.UpdateAsync(user);
-			if (!updateResult.Succeeded)
-			{
-				return BadRequest(updateResult.Errors.Select(e => e.Description));
-			}
+      var updateResult = await _userManager.UpdateAsync(user);
+      if (!updateResult.Succeeded)
+      {
+        return BadRequest(updateResult.Errors.Select(e => e.Description));
+      }
 
-			return NoContent();
-		}
+      return NoContent();
+    }
 
     [HttpDelete("{id}")]
     // [Authorize(Roles = Role.Teacher)]
@@ -253,8 +260,8 @@ public class UsersController(LmsContext lmsContext, UserManager<ApplicationUser>
         {
             return NotFound();
         }
-				
-				if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
+        
+        if(user.Roles.Any(r => r.Name == Role.Student) && user.Id != id)
         {
             return Forbid();
         }

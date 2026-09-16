@@ -9,5 +9,6 @@ namespace LMS.API.DTOs.Course
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
         public string? ImageURL { get; set; }
+        public List<string>? Users { get; set; } = [];
     }
 }
