@@ -189,7 +189,7 @@ namespace LMS.API.Controllers
                     ActivityExists: true
                 )).ToList(),
                 Write: new ActivityWrite(
-                    Id: updateActivityDto.Id,
+                    Id: activityId,
                     Name: updateActivityDto.Name,
                     Description: updateActivityDto.Description,
                     StartTime: updateActivityDto.StartTime,

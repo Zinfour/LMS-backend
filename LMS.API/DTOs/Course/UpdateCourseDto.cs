@@ -1,13 +1,7 @@
-﻿using LMS.API.Models;
-
-namespace LMS.API.DTOs.Course
+﻿namespace LMS.API.DTOs.Course
 {
     public class UpdateCourseDto
     {
-        public int Id { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-
         public string Name { get; set; } = null!;
         public string Description { get; set; } = null!;
         public DateOnly StartDate { get; set; }
